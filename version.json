@@ -2,7 +2,7 @@
   "version_num": 1,
   "version_date": "20.01.2023",
   "version_url": "https://raw.githubusercontent.com/WebbLua/SRPmembers/main/SRPmembers.lua",
-   "version_label": {
+  "version_label": {
              "Cody_Webb": {"color": "0xFFB30000", "text": "Верховный Главнокомандующий"},
              "Lavrentiy_Beria": {"color": "0xFFB30000", "text": "Верховный Главнокомандующий"},
              "Sebastian_Melgaard": {"color": "0xFFB30000", "text": "Верховный Главнокомандующий"},
