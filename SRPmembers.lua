@@ -1,7 +1,7 @@
 script_name('SRPmembers')
 script_author("Cody_Webb | Telegram: @Imikhailovich")
 script_version("21.01.2023")
-script_version_number(5)
+script_version_number(6)
 local script = {checked = false, available = false, update = false, v = {date, num}, url, reload, loaded, unload, quest = {}, upd = {changes = {}, sort = {}}, label = {}}
 local check = {bool = false, boolstream = false, stream = {}, findstream = false, status = false, amount = 0, irank = {}, line = 0, rmembers = {}, current = {}, mem1 = {}}
 -------------------------------------------------------------------------[Библиотеки/Зависимости]---------------------------------------------------------------------
@@ -411,7 +411,7 @@ end
 -------------------------------------------------------------------------[ФУНКЦИИ]-----------------------------------------------------------------------------------------
 function ev.onServerMessage(col, text)
 	if script.loaded then
-		if col == -356056833 and text:match("^ Для восстановления доступа нажмите клавишу %'F6%' и введите %'%/restoreAccess%'") then if needtoreload then script.reload = true thisScript():reload() end end
+		if col == -356056833 and text:match(u8:decode"^ Для восстановления доступа нажмите клавишу %'F6%' и введите %'%/restoreAccess%'") and needtoreload then script.reload = true thisScript():reload() end
 		if col == 1687547391 then
 			if text == " " then 
 				check.current = {}
@@ -419,24 +419,47 @@ function ev.onServerMessage(col, text)
 					return false 
 				end 
 			end
-			if text:match(u8:decode"^%[ID%]Имя  %{C0C0C0%}Ранг%[Номер%]  %{6495ED%}%[AFK секунд%]  %{C0C0C0%}Бан чата$") then 
+			if text:match(u8:decode"^%[ID%]Имя  %{C0C0C0%}Ранг%[Номер%].+%{6495ED%}%[AFK секунд%]  %{C0C0C0%}Бан чата$") then 
 				if check.bool then 
 					return false
-				end 
+				end
 			end
-			local id, nick, rank, i, str = text:match("^%[(%d+)%] (.*)  %{C0C0C0%}(.*) %[(.*)%]  %{6495ED%}(.*)")
-			if i ~= nil then
+			local id, nick, rank, i, prozv, str
+			if text:match("^%[(%d+)%] (.*)  %{C0C0C0%}(.*) %[(.*)%]%s?%[(%d+)%]  %{6495ED%}(.*)") then
+				id, nick, rank, i, prozv, str = text:match("^%[(%d+)%] (.*)  %{C0C0C0%}(.*) %[(.*)%]%s?%[(%d+)%]  %{6495ED%}(.*)")
 				if i:match(u8:decode"лидер") then 
 					i = 10
-					if rank:match(u8:decode'Генерал') then 
+					if rank:match(u8:decode'Генерал') then
 						i = 15 
 					end 
 					if rank:match(u8:decode'Шериф') then 
 						i = 14 
 					end
 				end
+				srpmembers_ini.list[nick] = rank
+				local afk = str:match("(%[.*%])")
+				check.mem1[nick] = {id = id, nick = nick, rank = rank, irank = tonumber(i), afk = afk ~= nil and afk or nil}
+				check.current[nick] = rank
+				check.irank[rank] = tonumber(i)
+				if check.boolstream then 
+					check.stream[nick] = rank
+				end
+				inicfg.save(srpmembers_ini, memb)
+				if check.bool then
+					return false 
+				end
 			end
-			if id ~= nil and nick ~= nil and rank ~= nil and tonumber(i) then 
+			if text:match("^%[(%d+)%] (.*)  %{C0C0C0%}(.*) %[(.*)%]  %{6495ED%}(.*)") then
+				id, nick, rank, i, str = text:match("^%[(%d+)%] (.*)  %{C0C0C0%}(.*) %[(.*)%]  %{6495ED%}(.*)")
+				if i:match(u8:decode"лидер") then 
+					i = 10
+					if rank:match(u8:decode'Генерал') then
+						i = 15 
+					end 
+					if rank:match(u8:decode'Шериф') then 
+						i = 14 
+					end
+				end
 				srpmembers_ini.list[nick] = rank
 				local afk = str:match("(%[.*%])")
 				check.mem1[nick] = {id = id, nick = nick, rank = rank, irank = tonumber(i), afk = afk ~= nil and afk or nil}
@@ -470,8 +493,15 @@ function ev.onServerMessage(col, text)
 				end 
 			end
 			local arbeiten, blaumachen = text:match(u8:decode"^Всего на работе%: (%d+) %/ выходные%: (%d+)$")
+			local all = tonumber(text:match(u8:decode"^Всего онлайн%: (%d+)"))
 			if tonumber(arbeiten) ~= nil and tonumber(blaumachen) ~= nil then
 				check.amount = tonumber(arbeiten) + tonumber(blaumachen)
+				if check.bool then 
+					return false 
+				end 
+			end
+			if all ~= nil then
+				check.amount = all
 				if check.bool then 
 					return false 
 				end 
@@ -612,12 +642,11 @@ function cmd_mem1()
 				local afk = v.afk == nil and "" or v.afk
 				local clist = string.sub(string.format('%x', sampGetPlayerColor(v.id)), 3)
 				local clist = clist == "ffff" and "fffafa" or clist
-				local rankcol = v.irank >= 12 and "00BFFF" or (v.irank == 1 and clist == "fffafa") and "ff0000" or "fffafa"
 				n = n + 1
 				table.insert(mem1[1], n)
 				table.insert(mem1[2], v.id)
 				table.insert(mem1[3], "{" .. clist .. "}" .. k .. "")
-				table.insert(mem1[4], "{" .. rankcol .. "}" .. v.rank .. "[" .. v.irank .. "]")
+				table.insert(mem1[4], "{fffafa}" .. v.rank .. "[" .. v.irank .. "]")
 				table.insert(mem1[5], afk)
 			end
 		end
