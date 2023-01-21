@@ -762,7 +762,7 @@ function checkUpdates() -- проверка обновлений
 					if info['version_num'] > thisScript()['version_num'] then
 						script.available = true
 						if script.update then updateScript() return end
-						chatmsg(updatingprefix .. u8:decode"Обнаружена новая версия скрипта от " .. info['version_date'] .. u8:decode", пропишите /srpmembup для обновления")
+						chatmsg(updatingprefix .. u8:decode"Обнаружена новая версия скрипта от " .. info['version_date'] .. u8:decode", пропишите /membup для обновления")
 						chatmsg(updatingprefix .. u8:decode"Изменения в новой версии:")
 						if script.upd.sort ~= {} then
 							for k in ipairs(script.upd.sort) do
