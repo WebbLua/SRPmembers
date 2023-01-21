@@ -1,7 +1,7 @@
 script_name('SRPmembers')
 script_author("Cody_Webb | Telegram: @Imikhailovich")
 script_version("21.01.2023")
-script_version_number(6)
+script_version_number(7)
 local script = {checked = false, available = false, update = false, v = {date, num}, url, reload, loaded, unload, quest = {}, upd = {changes = {}, sort = {}}, label = {}}
 local check = {bool = false, boolstream = false, stream = {}, findstream = false, status = false, amount = 0, irank = {}, line = 0, rmembers = {}, current = {}, mem1 = {}}
 -------------------------------------------------------------------------[Библиотеки/Зависимости]---------------------------------------------------------------------
@@ -19,7 +19,8 @@ local AdressConfig, AdressFolder, settings, srpmemb_ini, memb, srpmembers_ini, s
 
 local config = {
 	bools = {
-		['Руководство'] = false
+		['Руководство'] = false,
+		['Мемберс из чата'] = false
 	},
 	hotkey = {
 		['Проверить'] = "0"
@@ -82,7 +83,8 @@ function main()
 	end
 	
 	togglebools = {
-		['Руководство'] = srpmemb_ini.bools['Руководство'] and imgui.ImBool(true) or imgui.ImBool(false)
+		['Руководство'] = srpmemb_ini.bools['Руководство'] and imgui.ImBool(true) or imgui.ImBool(false),
+		['Мемберс из чата'] = srpmemb_ini.bools['Мемберс из чата'] and imgui.ImBool(true) or imgui.ImBool(false)
 	}
 	
 	sampRegisterChatCommand("memb", function() 
@@ -303,6 +305,12 @@ function imgui.OnDrawFrame()
 			end 
 			imgui.SameLine() 
 			imgui.Text("Отображать должности бойцов Армии LV") 
+			if imgui.ToggleButton("members", togglebools['Мемберс из чата']) then 
+				srpmemb_ini.bools['Мемберс из чата'] = togglebools['Мемберс из чата'].v
+				inicfg.save(srpmemb_ini, settings)
+			end
+			imgui.SameLine() 
+			imgui.Text("Проверять мемберс по чату (/members) а не через диалог") 
 			imgui.PopFont()
 			imgui.EndChild()
 		end
@@ -468,6 +476,7 @@ function ev.onServerMessage(col, text)
 				if check.boolstream then 
 					check.stream[nick] = rank
 				end
+				
 				inicfg.save(srpmembers_ini, memb)
 				if check.bool then
 					return false 
@@ -520,17 +529,33 @@ end
 function ev.onShowDialog(dialogid, style, title, button1, button2, text)
 	if script.loaded then
 		if dialogid == 22 and style == 5 and title == u8:decode"Состав онлайн" then
-			for v in text:gmatch('[^\n]+') do 
-				local id, nick, rank, i = v:match("%[%d+%] %[(%d+)%] ([%a_]+)	(%W*) %[(%d+)%].*") 
-				if nick ~= nil and rank ~= nil and tonumber(i) then 
+			check.current = {}
+			for v in text:gmatch('[^\n]+') do
+				local n, id, nick, rank, i, afk = v:match("%[(%d+)%] %[(%d+)%] (.*)	(%W*) %[(%d+)%](.*)")
+				if nick ~= nil and rank ~= nil and tonumber(i) then
+					check.amount = check.amount + 1
 					srpmembers_ini.list[nick] = rank
 					check.current[nick] = rank
 					check.irank[rank] = tonumber(i)
 					if check.boolstream then 
 						check.stream[nick] = rank
 					end
-					inicfg.save(srpmembers_ini, memb)
+					local afk = afk:match("(%[.*%])")
+					check.mem1[nick] = {id = id, nick = nick, rank = rank, irank = tonumber(i), afk = afk ~= nil and afk or nil}
 				end
+			end
+			removeFired()
+			inicfg.save(srpmembers_ini, memb)
+			if check.bool then 
+				sampSendDialogResponse(dialogid, 0, 0, "")
+				sampCloseCurrentDialogWithButton(0)
+				check.bool = false
+				if not check.boolstream then
+					chatmsg(u8:decode"Успешно проверил мемберс - " .. check.amount .. u8:decode(" человек онлайн"))
+					else
+					check.boolstream = false
+				end
+				return false 
 			end
 		end
 	end
@@ -549,7 +574,8 @@ end
 function members()
 	check.bool = true
 	check.status = false
-	chatManager.addMessageToQueue("/members")
+	check.amount = 0
+	chatManager.addMessageToQueue(srpmemb_ini.bools['Мемберс из чата'] and "/members" or "/members 1")
 end
 
 function getstream()
@@ -559,7 +585,7 @@ function getstream()
 		check.boolstream = true
 		check.status = false
 		check.line = 0
-		chatManager.addMessageToQueue("/members")
+		members()
 		while check.boolstream do wait(0) end
 		for k, v in pairs(check.stream) do
 			local id = sampGetPlayerIdByNickname(k)
