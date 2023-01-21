@@ -33,6 +33,7 @@ local main_color = 0x41491d
 local prefix = "{41491d}[SRPmembers] {FFFAFA}"
 local updatingprefix = u8:decode"{FF0000}[ОБНОВЛЕНИЕ] {FFFAFA}"
 local antiflood = 0
+local needtoreload = false
 
 local menu = { -- imgui-меню
 	main = imgui.ImBool(false),
@@ -315,6 +316,7 @@ end
 -------------------------------------------------------------------------[ФУНКЦИИ]-----------------------------------------------------------------------------------------
 function ev.onServerMessage(col, text)
 	if script.loaded then
+		if col == -356056833 and text:match("^ Для восстановления доступа нажмите клавишу %'F6%' и введите %'%/restoreAccess%'") then if needtoreload then script.reload = true thisScript():reload() end end
 		if col == 1687547391 then
 			if text == " " then 
 				check.current = {}
