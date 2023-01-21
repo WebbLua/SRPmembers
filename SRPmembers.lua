@@ -1,8 +1,9 @@
 script_name('SRPmembers')
 script_author("Cody_Webb | Telegram: @Imikhailovich")
-script_version("20.01.2023")
+script_version("21.01.2023")
 script_version_number(1)
 local script = {checked = false, available = false, update = false, v = {date, num}, url, reload, loaded, unload, quest = {}, upd = {changes = {}, sort = {}}, label = {}}
+local check = {bool = false, boolstream = false, stream = {}, findstream = false, status = false, amount = 0, irank = {}, line = 0, rmembers = {}, current = {}}
 -------------------------------------------------------------------------[Библиотеки/Зависимости]---------------------------------------------------------------------
 local ev = require 'samp.events'
 local imgui = require 'imgui'
@@ -18,13 +19,14 @@ local AdressConfig, AdressFolder, settings, srpmemb_ini, memb, srpmembers_ini, s
 
 local config = {
 	bools = {
-		['Должность'] = false
+		['Руководство'] = false
 	},
 	hotkey = {
 		['Проверить'] = "0"
 	}
 }
-local members = {
+local memberslist = {
+	list = {}
 }
 -------------------------------------------------------------------------[Переменные и маcсивы]-----------------------------------------------------------------
 local main_color = 0x41491d
@@ -33,7 +35,10 @@ local updatingprefix = u8:decode"{FF0000}[ОБНОВЛЕНИЕ] {FFFAFA}"
 local antiflood = 0
 
 local menu = { -- imgui-меню
-	main = imgui.ImBool(false)
+	main = imgui.ImBool(false),
+	settings = imgui.ImBool(true),
+	information = imgui.ImBool(false),
+	commands = imgui.ImBool(false)
 }
 imgui.ShowCursor = false
 
@@ -43,7 +48,7 @@ local clr = imgui.Col
 local currentNick
 local suspendkeys = 2 -- 0 хоткеи включены, 1 -- хоткеи выключены -- 2 хоткеи необходимо включить
 local ImVec4 = imgui.ImVec4
-local imfonts = {mainFont = nil}
+local imfonts = {mainFont = nil, smallmainFont = nil}
 -------------------------------------------------------------------------[MAIN]--------------------------------------------------------------------------------------------
 function main()
 	if not isSampLoaded() or not isSampfuncsLoaded() then return end
@@ -69,15 +74,15 @@ function main()
 	end
 	
 	if srpmembers_ini == nil then -- загружаем мемберс
-		srpmembers_ini = inicfg.load(members, memb)
+		srpmembers_ini = inicfg.load(memberslist, memb)
 		inicfg.save(srpmembers_ini, memb)
 	end
 	
 	togglebools = {
-		['Должность'] = srpmemb_ini.bools['Должность'] and imgui.ImBool(true) or imgui.ImBool(false)
+		['Руководство'] = srpmemb_ini.bools['Руководство'] and imgui.ImBool(true) or imgui.ImBool(false)
 	}
 	
-	sampRegisterChatCommand("srpmemb", function() 
+	sampRegisterChatCommand("memb", function() 
 		for k, v in pairs(srpmemb_ini.hotkey) do 
 			local hk = makeHotKey(k) 
 			if tonumber(hk[1]) ~= 0 then 
@@ -87,12 +92,13 @@ function main()
 		suspendkeys = 1 
 		menu.main.v = not menu.main.v 
 	end)
-	sampRegisterChatCommand('srpmembup', updateScript)
+	sampRegisterChatCommand('getstream', getstream)
+	sampRegisterChatCommand('membup', updateScript)
 	
 	script.loaded = true
 	repeat wait(0) until sampIsLocalPlayerSpawned()
 	checkUpdates()
-	chatmsg(u8:decode"Скрипт запущен. Открыть главное меню - /srpmemb")
+	chatmsg(u8:decode"Скрипт запущен. Открыть главное меню - /memb")
 	needtoreload = true
 	
 	imgui.Process = true
@@ -101,10 +107,12 @@ function main()
 	
 	chatManager.initQueue()
 	lua_thread.create(chatManager.checkMessagesQueueThread)
+	rmembers()
+	members()
 	while true do
 		wait(0)
 		if suspendkeys == 2 then
-			rkeys.registerHotKey(makeHotKey("Проверка"), true, function() if sampIsChatInputActive() or sampIsDialogActive(-1) or isSampfuncsConsoleActive() then return end members() end)
+			rkeys.registerHotKey(makeHotKey("Проверить"), true, function() if sampIsChatInputActive() or sampIsDialogActive(-1) or isSampfuncsConsoleActive() then return end members() end)
 			suspendkeys = 0
 		end
 		if not menu.main.v then 
@@ -115,6 +123,16 @@ function main()
 			end
 		end
 		textLabelOverPlayerNickname()
+		rankLabelOverPlayerNickname()
+		postLabelOverPlayerNickname()
+		if not srpmemb_ini.bools['Руководство'] then
+			for i = 0, 1000 do
+				if postlabel[i] ~= nil then
+					sampDestroy3dText(postlabel[i])
+					postlabel[i] = nil
+				end
+			end
+		end
 	end
 end
 -------------------------------------------------------------------------[IMGUI]-------------------------------------------------------------------------------------------
@@ -185,9 +203,7 @@ function apply_custom_styles()
 	
 	imgui.GetIO().Fonts:Clear()
 	imfonts.mainFont = imgui.GetIO().Fonts:AddFontFromFileTTF(getFolderPath(0x14)..'\\times.ttf', 20.0, nil, imgui.GetIO().Fonts:GetGlyphRangesCyrillic())
-	
-	imfonts.ovFontCars = renderCreateFont("times", 14, 12)
-	imfonts.ovFontSquadRender = renderCreateFont("times", 11, 12)
+	imfonts.smallmainFont = imgui.GetIO().Fonts:AddFontFromFileTTF(getFolderPath(0x14)..'\\times.ttf', 16.0, nil, imgui.GetIO().Fonts:GetGlyphRangesCyrillic())
 	
 	imgui.GetIO().Fonts:AddFontFromFileTTF(getFolderPath(0x14)..'\\times.ttf', 14.0, nil, imgui.GetIO().Fonts:GetGlyphRangesCyrillic())
 	imgui.RebuildFonts()
@@ -202,20 +218,95 @@ function imgui.OnDrawFrame()
 		imgui.ShowCursor = true
 		local sw, sh = getScreenResolution()
 		imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
-		imgui.SetNextWindowSize(imgui.ImVec2(400, 600), imgui.Cond.FirstUseEver)
+		imgui.SetNextWindowSize(imgui.ImVec2(600, 600), imgui.Cond.FirstUseEver)
 		imgui.GetStyle().WindowTitleAlign = imgui.ImVec2(0.5, 0.5)
 		imgui.Begin(thisScript().name .. (script.available and ' [Доступно обновление: v' .. script.v.num .. ' от ' .. script.v.date .. ']' or ' v' .. script.v.num .. ' от ' .. script.v.date), menu.main, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar)
 		local ww = imgui.GetWindowWidth()
 		local wh = imgui.GetWindowHeight()
 		
-		imgui.SetCursorPos(imgui.ImVec2(ww/2 - 568, wh/2 - 320))
-		if imgui.Button("Автоматические действия", imgui.ImVec2(280.0, 35.0)) then menu.automatic.v = true menu.commands.v = false menu.binds.v = false menu.overlay.v = false menu.information.v = false menu.binder.v = false  menu.password.v = false menu.inventory.v = false menu.editor.v = false menu.variables.v = false end
+		if imgui.Button("Настройки", imgui.ImVec2(290.0, 35.0)) then menu.settings.v = true menu.information.v = false menu.commands.v = false end
 		imgui.SameLine()
-		if imgui.Button("Клавиши и команды", imgui.ImVec2(280.0, 35.0)) then menu.automatic.v = false menu.commands.v = false menu.binds.v = true menu.overlay.v = false menu.information.v = false menu.binder.v = false  menu.password.v = false menu.inventory.v = false menu.editor.v = false menu.variables.v = false end
-		imgui.SameLine()
-		if imgui.Button("Overlay", imgui.ImVec2(280.0, 35.0)) then menu.automatic.v = false menu.commands.v = false menu.binds.v = false menu.overlay.v = true menu.information.v = false menu.binder.v = false  menu.password.v = false menu.inventory.v = false menu.editor.v = false menu.variables.v = false end
-		imgui.SameLine()
-		if imgui.Button("Кастомный биндер", imgui.ImVec2(280.0, 35.0)) then currentBind = nil menu.automatic.v = false menu.commands.v = false menu.binds.v = false menu.overlay.v = false menu.information.v = false menu.binder.v = true menu.password.v = false menu.inventory.v = false menu.editor.v = false menu.variables.v = false end
+		if imgui.Button("Информация", imgui.ImVec2(290.0, 35.0)) then menu.settings.v = false menu.information.v = true menu.commands.v = false end
+		
+		if menu.settings.v and not menu.information.v then
+			imgui.BeginChild('settings', imgui.ImVec2(584, 429), true)
+			imgui.PushFont(imfonts.smallmainFont)
+			imgui.Hotkey("hotkey", "Проверить", 100) imgui.SameLine() imgui.Text("Проверить мемберс\n(мемберс будет автоматически скрыт)")
+			if imgui.ToggleButton("rmembers", togglebools['Руководство']) then 
+				srpmemb_ini.bools['Руководство'] = togglebools['Руководство'].v
+				if srpmemb_ini.bools['Руководство'] then rmembers() end
+				inicfg.save(srpmemb_ini, settings)
+			end 
+			imgui.SameLine() 
+			imgui.Text("Отображать должности бойцов Армии LV") 
+			imgui.PopFont()
+			imgui.EndChild()
+		end
+		
+		if not menu.settings.v and menu.information.v then
+			imgui.Text("Данный скрипт является рендером рангов на игроках для проекта Samp RP")
+			imgui.Text("Автор: Cody_Webb | Telegram: @Imikhailovich")
+			imgui.NewLine()
+			imgui.Text("Все настройки автоматически сохраняются в файл:\nmoonloader//config//SRPmembers by Webb//Server//Nick_Name")
+			imgui.NewLine()
+			imgui.Text("Информация о последних обновлениях:")
+			imgui.BeginChild('information', imgui.ImVec2(584, 265), true)
+			for k in ipairs(script.upd.sort) do
+				if script.upd.changes[tostring(k)] ~= nil then
+					imgui.Text(k .. ') ' .. script.upd.changes[tostring(k)])
+					imgui.NewLine()
+				end
+			end
+			imgui.EndChild()
+		end
+		
+		if menu.commands.v then
+			local cmds = {
+				"/memb - открыть/закрыть главное меню скрипта",
+				"/getstream - проверить наличие игроков организации в зоне прорисовке",
+				"/membup - обновить скрипт",
+			}
+			local w = 0
+			local sortcmds = {}
+			for k, v in ipairs(cmds) do table.insert(sortcmds, imgui.CalcTextSize(v).x) end
+			table.sort(sortcmds, function(a, b) return a < b end)
+			for k, v in ipairs(sortcmds) do
+				w = v + 50
+			end
+			imgui.SetNextWindowPos(imgui.ImVec2(sw / 2, sh / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
+			imgui.SetNextWindowSize(imgui.ImVec2(w, 300), imgui.Cond.FirstUseEver, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar)
+			imgui.Begin("Все команды скрипта", menu.commands, imgui.WindowFlags.NoCollapse + imgui.WindowFlags.NoResize + imgui.WindowFlags.NoScrollbar)
+			imgui.Text("Данные команды являются системными, их нельзя изменить:")
+			imgui.BeginChild('commands', imgui.ImVec2(w - 15, 235), true)
+			for k, v in ipairs(cmds) do imgui.Text(v) end
+			imgui.EndChild()
+			imgui.End()
+		end
+		
+		imgui.SetCursorPos(imgui.ImVec2(25, wh/2 + 250))
+		local found = false
+		for i = 0, 1000 do
+			if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
+				if sampGetPlayerNickname(i) == "Cody_Webb" then
+					if imgui.Button("Cody_Webb[" .. i .. "] сейчас в сети", imgui.ImVec2(260.0, 30.0)) then
+						chatManager.addMessageToQueue("/sms " .. i .. " Я пользуюсь твоим скриптом, большое спасибо")
+					end
+					found = true
+				end
+			end
+		end
+		if not found then
+			if imgui.Button("Cody Webb сейчас не в сети", imgui.ImVec2(245.0, 30.0)) then
+				chatmsg(u8:decode"Cody Webb играет на Revolution (сейчас не онлайн)", main_color)
+			end
+		end
+		
+		imgui.PushFont(imfonts.smallmainFont)
+		imgui.SetCursorPos(imgui.ImVec2(25, wh/2 + 215))
+		if imgui.Button("Все команды скрипта", imgui.ImVec2(170.0, 23.0)) then menu.commands.v = true end
+		imgui.SetCursorPos(imgui.ImVec2(ww/2 + 100, wh/2 + 250))
+		if imgui.Button("Открыть GitHub", imgui.ImVec2(170.0, 23.0)) then os.execute('explorer "https://github.com/WebbLua/SRPmembers"') end if imgui.IsItemHovered() then imgui.BeginTooltip() imgui.TextUnformatted("При нажатии, в браузере по умолчанию откроется ссылка на GitHub скрипта") imgui.EndTooltip() end
+		imgui.PopFont()
 		
 		imgui.End()
 		imgui.PopFont()
@@ -225,61 +316,85 @@ end
 function ev.onServerMessage(col, text)
 	if script.loaded then
 		if col == 1687547391 then
-			if text == "  " then return false end
-			if text:match("^%[ID%]Имя  %{C0C0C0%}Ранг%[Номер%]  %{6495ED%}%[AFK секунд%]  %{C0C0C0%}Бан чата$") then return false end
-			local nick, rank = text:match("^%[%d+%] (.*)  %{C0C0C0%}(.*) %[%d+%]  %{6495ED%}")
-			if nick ~= nil and rank ~= nil then 
-				srpmemb_ini[nick] = rank
-				return false
+			if text == " " then 
+				check.current = {}
+				if check.bool then 
+					return false 
+				end 
+			end
+			if text:match(u8:decode"^%[ID%]Имя  %{C0C0C0%}Ранг%[Номер%]  %{6495ED%}%[AFK секунд%]  %{C0C0C0%}Бан чата$") then 
+				if check.bool then 
+					return false
+				end 
+			end
+			local nick, rank, i = text:match("^%[%d+%] (.*)  %{C0C0C0%}(.*) %[(%d+)%]  %{6495ED%}")
+			if nick ~= nil and rank ~= nil and tonumber(i) then 
+				srpmembers_ini.list[nick] = rank
+				check.current[nick] = rank
+				check.irank[rank] = tonumber(i)
+				if check.boolstream then 
+					check.stream[nick] = rank
+				end
+				inicfg.save(srpmembers_ini, memb)
+				if check.bool then
+					return false 
+				end
 			end
 		end
 		if col == -1061109505 then
-			if text:match("^===========================================$") then return false end
-		end
-		if col == -10270721 then
-			if text:match("^%[Выходные%]$") then
-				return false
+			if text:match("^===========================================$") then 
+				if check.bool then 
+					if check.status then
+						check.bool = false
+						removeFired()
+						if not check.boolstream then
+							chatmsg(u8:decode"Успешно проверил мемберс - " .. check.amount .. u8:decode(" человек онлайн"))
+							else
+							check.boolstream = false
+						end
+						else
+						check.status = true
+					end
+					return 
+					false 
+				end 
+			end
+			local arbeiten, blaumachen = text:match(u8:decode"^Всего на работе%: (%d+) %/ выходные%: (%d+)$")
+			if tonumber(arbeiten) ~= nil and tonumber(blaumachen) ~= nil then
+				check.amount = tonumber(arbeiten) + tonumber(blaumachen)
+				if check.bool then 
+					return false 
+				end 
 			end
 		end
-		inicfg.save(srpmemb_ini, settings)
+		if col == -10270721 then
+			if text:match(u8:decode"^%[Выходные%]$") then
+				if check.bool then 
+					return false 
+				end
+			end
+		end
 	end
 end
 
--- [ML] (script) SpecialFunctions.lua:     1687547391
--- [ML] (script) SpecialFunctions.lua: [ID]Имя  Ранг[Номер]  [AFK секунд]  Бан чата   1687547391
--- [ML] (script) SpecialFunctions.lua: ===========================================   -1061109505
--- [ML] (script) SpecialFunctions.lua: [9] Luis_Havertz  Ефрейтор [2]     1687547391
--- [ML] (script) SpecialFunctions.lua: [20] Cameron_Rayson  Полковник [14]     1687547391
--- [ML] (script) SpecialFunctions.lua: [36] Micha_Dirol  Ефрейтор [2]     1687547391
--- [ML] (script) SpecialFunctions.lua: [91] Dima_Travokur  Рядовой [1]  [AFK: 442]   1687547391
--- [ML] (script) SpecialFunctions.lua: [114] Vana_Grelon  Ефрейтор [2]     1687547391
--- [ML] (script) SpecialFunctions.lua: [146] Wiliam_Djons  Ст.Лейтенант [10]     1687547391
--- [ML] (script) SpecialFunctions.lua: [180] Joe_Santos  Мл.сержант [3]     1687547391
--- [ML] (script) SpecialFunctions.lua: [201] Maik_Leslie  Подполковник [13]     1687547391
--- [ML] (script) SpecialFunctions.lua: [204] Liam_Antonio  Прапорщик [7]     1687547391
--- [ML] (script) SpecialFunctions.lua: [208] Dwaune_Johnson  Сержант [4]     1687547391
--- [ML] (script) SpecialFunctions.lua: [226] Foma_Harison  Ефрейтор [2]     1687547391
--- [ML] (script) SpecialFunctions.lua: [239] Misato_Katsuragi  Мл.сержант [3]  [SLEEP|AFK: 5502|5501]   1687547391
--- [ML] (script) SpecialFunctions.lua: [251] Enzo_Elesteroff  Рядовой [1]     1687547391
--- [ML] (script) SpecialFunctions.lua: [252] Jack_Green  Сержант [4]     1687547391
--- [ML] (script) SpecialFunctions.lua: [263] Federico_Boune  Мл.Лейтенант [8]     1687547391
--- [ML] (script) SpecialFunctions.lua: [278] Joseph_Lis  Капитан [11]     1687547391
--- [ML] (script) SpecialFunctions.lua: [303] Dom_Estos  Старшина [6]     1687547391
--- [ML] (script) SpecialFunctions.lua: [379] Sashka_Dias  Ефрейтор [2]     1687547391
--- [ML] (script) SpecialFunctions.lua: [393] Julie_Escobar  Капитан [11]     1687547391
--- [ML] (script) SpecialFunctions.lua: [394] Luke_Evans  Ст.сержант [5]     1687547391
--- [ML] (script) SpecialFunctions.lua: [401] Ken_Deloroza  Ст.сержант [5]     1687547391
--- [ML] (script) SpecialFunctions.lua: [441] Alex_Mori  Рядовой [1]     1687547391
--- [ML] (script) SpecialFunctions.lua: [Выходные]   -10270721
--- [ML] (script) SpecialFunctions.lua: [3] Dennis_Dias  Сержант [4]     1687547391
--- [ML] (script) SpecialFunctions.lua: [53] Lavrentiy_Beria  Ст.Лейтенант [10]     1687547391
--- [ML] (script) SpecialFunctions.lua: [164] Hector_Gray  Сержант [4]     1687547391
--- [ML] (script) SpecialFunctions.lua: [211] Nikolay_Kapustin  Мл.сержант [3]  [SLEEP|AFK: 1580|1576]   1687547391
--- [ML] (script) SpecialFunctions.lua: [249] Joe_Mod  Старшина [6]     1687547391
--- [ML] (script) SpecialFunctions.lua: [264] Obiram_Antonio  Старшина [6]     1687547391
--- [ML] (script) SpecialFunctions.lua: [646] Daniil_Puchkov  Лейтенант [9]  [SLEEP|AFK: 12791|12741]   1687547391
--- [ML] (script) SpecialFunctions.lua: Всего на работе: 22 / выходные: 7   -1061109505
--- [ML] (script) SpecialFunctions.lua: ===========================================   -1061109505
+function ev.onShowDialog(dialogid, style, title, button1, button2, text)
+	if script.loaded then
+		if dialogid == 22 and style == 5 and title == u8:decode"Состав онлайн" then
+			for v in text:gmatch('[^\n]+') do 
+				local id, nick, rank, i = v:match("%[%d+%] %[(%d+)%] ([%a_]+)	(%W*) %[(%d+)%].*") 
+				if nick ~= nil and rank ~= nil and tonumber(i) then 
+					srpmembers_ini.list[nick] = rank
+					check.current[nick] = rank
+					check.irank[rank] = tonumber(i)
+					if check.boolstream then 
+						check.stream[nick] = rank
+					end
+					inicfg.save(srpmembers_ini, memb)
+				end
+			end
+		end
+	end
+end
 
 function ev.onSendChat(message)
 	chatManager.lastMessage = message
@@ -289,6 +404,90 @@ end
 function ev.onSendCommand(message)
 	chatManager.lastMessage = message
 	chatManager.updateAntifloodClock()
+end
+
+function members()
+	check.bool = true
+	check.status = false
+	chatManager.addMessageToQueue("/members")
+end
+
+function getstream()
+	lua_thread.create(function()
+		check.stream = {}
+		check.bool = true
+		check.boolstream = true
+		check.status = false
+		check.line = 0
+		chatManager.addMessageToQueue("/members")
+		while check.boolstream do wait(0) end
+		for k, v in pairs(check.stream) do
+			local id = sampGetPlayerIdByNickname(k)
+			if id ~= nil then
+				if sampGetCharHandleBySampPlayerId(id) then
+					if check.line == 0 then 
+						sampAddChatMessage("===========================================", 0xFFBFBFBF) 
+						check.line = check.line + 1 
+					end
+					local clist = "{" .. ("%06x"):format(bit.band(sampGetPlayerColor(id), 0xFFFFFF)) .. "}"
+					chatmsg(clist .. k .. "[" .. id .. "] {BFBFBF}" .. v .. (check.irank[v] ~= nil and "[" .. check.irank[v] .. "]" or "") .. (sampIsPlayerPaused(id) and " {008000}[AFK]" or "") .. u8:decode" - в зоне прорисовки")
+					check.findstream = true
+				end
+			end
+		end
+		if check.line ~= 0 then 
+			sampAddChatMessage("===========================================", 0xFFBFBFBF) 
+			check.line = 0
+		end
+		if not check.findstream then chatmsg(u8:decode"Никого не найдено из мемберса!") end
+	end)
+end
+
+function removeFired()
+	for i = 0, 1000 do
+		if sampIsPlayerConnected(i) and srpmembers_ini.list[sampGetPlayerNickname(i)] ~= nil then
+			if check.current[sampGetPlayerNickname(i)] == nil then
+				srpmembers_ini.list[sampGetPlayerNickname(i)] = nil
+				inicfg.save(srpmembers_ini, memb)
+			end
+		end
+	end
+end
+
+function rmembers() -- взято из rukovodstvo.lua
+	check.rmembers = {}
+    local temp = os.tmpname()
+    local time = os.time()
+    downloadUrlToFile("https://docs.google.com/spreadsheets/u/0/d/1hVwvPBD5PJT3CrHvsOIWGtJigGmMT5UfmgZsPJfu_Hk/export?format=tsv", temp, function(_, status)
+        if (status == 58) then
+            local file = io.open(temp, "r")
+            for line in file:lines() do
+                line = encoding.UTF8:decode(line)
+                local template = "(%w+_%w+)\t(.+)"
+                if (line:find(template)) then
+                    local name, office = line:match(template)
+					check.rmembers[name] = office
+				end
+			end
+            file:close()
+            os.remove(temp)
+			else
+            if (os.time() - time > 10) then
+                chatmsg("Превышено время загрузки файла, повторите попытку", 0xFFFFFFFF)
+				return
+			end
+		end
+	end)
+end
+
+function sampGetPlayerIdByNickname(name)
+	local name = tostring(name)
+	local _, localId = sampGetPlayerIdByCharHandle(PLAYER_PED)
+	for i = 0, 1000 do
+		if (sampIsPlayerConnected(i) or localId == i) and sampGetPlayerNickname(i) == name then
+			return i
+		end
+	end
 end
 -------------------------------------------[ChatManager -> взято из donatik.lua]------------------------------------------
 chatManager = {}
@@ -363,13 +562,13 @@ end
 --------------------------------------------------------------------------------------------------------------------------
 textlabel = {}
 function textLabelOverPlayerNickname()
-	for i = 0, 999 do
+	for i = 0, 1000 do
 		if textlabel[i] ~= nil then
 			sampDestroy3dText(textlabel[i])
 			textlabel[i] = nil
 		end
 	end
-	for i = 0, 999 do 
+	for i = 0, 1000 do 
 		if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
 			local nick = sampGetPlayerNickname(i)
 			if script.label[nick] ~= nil then
@@ -386,6 +585,56 @@ function textLabelOverPlayerNickname()
 	end
 end
 
+ranklabel = {}
+function rankLabelOverPlayerNickname()
+	for i = 0, 1000 do
+		if ranklabel[i] ~= nil then
+			sampDestroy3dText(ranklabel[i])
+			ranklabel[i] = nil
+		end
+	end
+	for i = 0, 1000 do 
+		if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
+			local nick = sampGetPlayerNickname(i)
+			if srpmembers_ini.list[nick] ~= nil then
+				if ranklabel[i] == nil then
+					ranklabel[i] = sampCreate3dText(srpmembers_ini.list[nick], 0xFFFFFAFA, 0.0, 0.0, 0.4, 22, false, i, -1)
+				end
+			end
+			else
+			if ranklabel[i] ~= nil then
+				sampDestroy3dText(ranklabel[i])
+				ranklabel[i] = nil
+			end
+		end
+	end
+end
+
+postlabel = {}
+function postLabelOverPlayerNickname()
+	for i = 0, 1000 do
+		if postlabel[i] ~= nil then
+			sampDestroy3dText(postlabel[i])
+			postlabel[i] = nil
+		end
+	end
+	for i = 0, 1000 do 
+		if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
+			local nick = sampGetPlayerNickname(i)
+			if check.rmembers[nick] ~= nil then
+				if postlabel[i] == nil then
+					postlabel[i] = sampCreate3dText(check.rmembers[nick], 0xFF046901, 0.0, 0.0, 0.3, 22, false, i, -1)
+				end
+			end
+			else
+			if postlabel[i] ~= nil then
+				sampDestroy3dText(postlabel[i])
+				postlabel[i] = nil
+			end
+		end
+	end
+end
+
 function chatmsg(t)
 	sampAddChatMessage(prefix .. t, main_color)
 end
@@ -396,6 +645,16 @@ function makeHotKey(numkey)
 		if tonumber(v) ~= 0 then table.insert(rett, tonumber(v)) end
 	end
 	return rett
+end
+
+function string.split(str, delim, plain) -- bh FYP
+	local tokens, pos, plain = {}, 1, not (plain == false) --[[ delimiter is plain text by default ]]
+	repeat
+		local npos, epos = string.find(str, delim, pos, plain)
+		table.insert(tokens, string.sub(str, pos, npos and npos - 1))
+		pos = epos and epos + 1
+	until not pos
+	return tokens
 end
 
 function imgui.Hotkey(name, numkey, width)
@@ -544,10 +803,18 @@ end
 
 function onScriptTerminate(s, bool)
 	if s == thisScript() and not bool then
-		for i = 0, 999 do
+		for i = 0, 1000 do
 			if textlabel[i] ~= nil then
 				sampDestroy3dText(textlabel[i])
 				textlabel[i] = nil
+			end
+			if ranklabel[i] ~= nil then
+				sampDestroy3dText(ranklabel[i])
+				ranklabel[i] = nil
+			end
+			if postlabel[i] ~= nil then
+				sampDestroy3dText(postlabel[i])
+				postlabel[i] = nil
 			end
 		end
 		if not script.reload then
