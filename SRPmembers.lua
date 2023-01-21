@@ -1,7 +1,7 @@
 script_name('SRPmembers')
 script_author("Cody_Webb | Telegram: @Imikhailovich")
 script_version("21.01.2023")
-script_version_number(2)
+script_version_number(3)
 local script = {checked = false, available = false, update = false, v = {date, num}, url, reload, loaded, unload, quest = {}, upd = {changes = {}, sort = {}}, label = {}}
 local check = {bool = false, boolstream = false, stream = {}, findstream = false, status = false, amount = 0, irank = {}, line = 0, rmembers = {}, current = {}}
 -------------------------------------------------------------------------[Библиотеки/Зависимости]---------------------------------------------------------------------
@@ -625,7 +625,7 @@ function postLabelOverPlayerNickname()
 			local nick = sampGetPlayerNickname(i)
 			if check.rmembers[nick] ~= nil then
 				if postlabel[i] == nil then
-					postlabel[i] = sampCreate3dText(check.rmembers[nick], 0xFF046901, 0.0, 0.0, 0.3, 22, false, i, -1)
+					postlabel[i] = sampCreate3dText(check.rmembers[nick], 0xFF046901, 0.0, 0.0, 0.60, 22, false, i, -1)
 				end
 			end
 			else
