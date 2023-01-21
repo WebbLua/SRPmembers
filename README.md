@@ -11,7 +11,7 @@
 - encoding
 
 ## Скачать скрипт и все необходимые библиотеки
--   [SRPmembers.lua](https://drive.google.com/file/d/1-gtuVExgKkQeWfSW0HYzx-xocGLldeyg/view?usp=sharing)
+-   [SRPmembers.lua](https://github.com/WebbLua/SRPmembers/archive/refs/heads/main.zip)
 -   [CLEO 4](https://cleo.li)
 -   [SAMPFUNCS v5.4.1](https://www.blast.hk/threads/17/)
 -   [Moonloader v026.5](https://www.blast.hk/threads/13305/)
