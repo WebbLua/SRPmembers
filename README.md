@@ -1,6 +1,6 @@
 ## SRPmembers
 Скипт для отображения рангов на игроках. Аналог SuperMembers
-- Автор: Cody_Webb | Telegram: @Imikhailovich (для предложений по разработке и фиксам)
+- Автор: Cody_Webb | Telegram: [@Imykhailovich (для предложений по разработке и фиксам)](https://t.me/Imykhailovich)
 
 ## Зависимости
 - [samp.events](https://www.blast.hk/threads/14624/)
