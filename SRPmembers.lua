@@ -1,7 +1,7 @@
 script_name('SRPmembers')
-script_author("Cody_Webb | Telegram: @Imikhailovich")
-script_version("21.01.2023")
-script_version_number(7)
+script_author("Cody_Webb | Telegram: @Imykhailovich")
+script_version("22.01.2023")
+script_version_number(8)
 local script = {checked = false, available = false, update = false, v = {date, num}, url, reload, loaded, unload, quest = {}, upd = {changes = {}, sort = {}}, label = {}}
 local check = {bool = false, boolstream = false, stream = {}, findstream = false, status = false, amount = 0, irank = {}, line = 0, rmembers = {}, current = {}, mem1 = {}}
 -------------------------------------------------------------------------[Библиотеки/Зависимости]---------------------------------------------------------------------
@@ -317,7 +317,11 @@ function imgui.OnDrawFrame()
 		
 		if not menu.settings.v and menu.information.v then
 			imgui.Text("Данный скрипт является рендером рангов на игроках для проекта Samp RP")
-			imgui.Text("Автор: Cody_Webb | Telegram: @Imikhailovich")
+			imgui.Text("Автор: Cody_Webb | Telegram: @Imykhailovich")
+			imgui.SameLine()
+			imgui.PushFont(imfonts.smallmainFont)
+			if imgui.Button("Написать разработчику", imgui.ImVec2(180.0, 23.0)) then os.execute('explorer "https://t.me/Imykhailovich"') end
+			imgui.PopFont()
 			imgui.NewLine()
 			imgui.Text("Все настройки автоматически сохраняются в файл:\nmoonloader//config//SRPmembers by Webb//Server//Nick_Name")
 			imgui.NewLine()
