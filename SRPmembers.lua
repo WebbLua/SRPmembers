@@ -1,7 +1,7 @@
 script_name('SRPmembers')
 script_author("Cody_Webb | Telegram: @Imykhailovich")
-script_version("22.01.2023")
-script_version_number(8)
+script_version("24.01.2023")
+script_version_number(9)
 local script = {checked = false, available = false, update = false, v = {date, num}, url, reload, loaded, unload, quest = {}, upd = {changes = {}, sort = {}}, label = {}}
 local check = {bool = false, boolstream = false, stream = {}, findstream = false, status = false, amount = 0, irank = {}, line = 0, rmembers = {}, current = {}, mem1 = {}}
 -------------------------------------------------------------------------[Библиотеки/Зависимости]---------------------------------------------------------------------
@@ -100,6 +100,7 @@ function main()
 	sampRegisterChatCommand('getstream', getstream)
 	sampRegisterChatCommand('membup', updateScript)
 	sampRegisterChatCommand('mem1', cmd_mem1)
+	sampRegisterChatCommand('marks', cmd_marks)
 	
 	script.loaded = true
 	repeat wait(0) until sampIsLocalPlayerSpawned()
@@ -341,7 +342,8 @@ function imgui.OnDrawFrame()
 				"/memb - открыть/закрыть главное меню скрипта",
 				"/getstream - проверить наличие игроков организации в зоне прорисовке",
 				"/membup - обновить скрипт",
-				"/mem1 - посмотреть мемберс в красивом imgui-окне"
+				"/mem1 - посмотреть мемберс в красивом imgui-окне",
+				"/marks [id/nick] - отметки из srp-addons"
 			}
 			local w = 0
 			local sortcmds = {}
@@ -366,7 +368,7 @@ function imgui.OnDrawFrame()
 			if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
 				if sampGetPlayerNickname(i) == "Cody_Webb" then
 					if imgui.Button("Cody_Webb[" .. i .. "] сейчас в сети", imgui.ImVec2(260.0, 30.0)) then
-						chatManager.addMessageToQueue("/sms " .. i .. " Я пользуюсь твоим скриптом, большое спасибо")
+						chatManager.addMessageToQueue("/sms " .. i .. " Я пользуюсь members, большое спасибо")
 					end
 					found = true
 				end
@@ -582,6 +584,52 @@ function members()
 	chatManager.addMessageToQueue(srpmemb_ini.bools['Мемберс из чата'] and "/members" or "/members 1")
 end
 
+function cmd_marks(sparams)
+	if sparams == "" then chatmsg(u8:decode"Неверный параметр. Введите /marks [id/nick]") return end
+	local params = {}
+	for v in string.gmatch(sparams, "[^%s]+") do table.insert(params, v) end
+	local id = -1
+	if tonumber(params[1]) ~= nil and tonumber(params[1]) >= 0 and tonumber(params[1]) <= 999  then id = tonumber(params[1]) end
+	if id ~= -1 and not sampIsPlayerConnected(tonumber(params[1])) then chatmsg(u8:decode"Игрок оффлайн") return end
+	local nick = id == -1 and params[1] or sampGetPlayerNickname(tonumber(params[1]))
+	local temp = os.tmpname()
+	local time = os.time()
+	local found = false
+	downloadUrlToFile("http://srp-addons.ru/om/fraction/Army%20LV", temp, function(_, status)
+		if (status == 58) then
+			local file = io.open(temp, "r")
+			for line in file:lines() do
+				line = encoding.UTF8:decode(line)
+				local ranks = {
+					"Рядовой", "Ефрейтор", "Младший сержант", "Сержант", "Старший сержант", 
+					"Старшина", "Прапорщик", "Младший лейтенант", "Лейтенант", "Старший лейтенант", 
+					"Капитан", "Майор", "Подполковник", "Полковник", "Генерал"
+				}
+				local offrank, offtm, offwm, offdate = line:match('%["' .. nick .. '",(%d+),%[(%d+),(%d+)%],"(%d+/%d+/%d+ %d+%:%d+%:%d+)"%]')
+				if tonumber(offrank) ~= nil and tonumber(offtm) ~= nil and tonumber(offwm) ~= nil and offdate ~= nil then
+					found = true
+					local datetime = {}
+					datetime.year, datetime.month, datetime.day = offdate:match("(%d+)/(%d+)/(%d+) %d+%:%d+%:%d+")
+					chatmsg("{FF8300}-----------=== Offmembers Las-Venturas Army ===-----------")
+					chatmsg("{FF8300}" .. u8:decode(ranks[tonumber(offrank)]) .. " " .. nick .. (sampGetPlayerIdByNickname(nick) ~= nil and "[" .. sampGetPlayerIdByNickname(nick) .. "]" or ""))
+					chatmsg("{FF8300}" .. u8:decode"Сегодня отметок: " .. offtm)
+					chatmsg("{FF8300}" .. u8:decode"За неделю отметок: " .. offwm)
+					chatmsg("{FF8300}" .. u8:decode"Последний вход: " .. offdate .. " (" .. math.floor((os.difftime(os.time(), os.time(datetime))) / 3600 / 24) .. u8:decode" дней назад)")
+					chatmsg("{FF8300}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+				end
+			end
+			if not found then chatmsg(u8:decode"Отметки " .. nick .. u8:decode" не найдены!") end
+			file:close()
+			os.remove(temp)
+			else
+			if (os.time() - time > 10) then
+				chatmsg("Превышено время загрузки файла, повторите попытку", 0xFFFFFFFF)
+				return
+			end
+		end
+	end)
+end
+
 function getstream()
 	lua_thread.create(function()
 		check.stream = {}
@@ -630,8 +678,8 @@ function rmembers() -- взято из rukovodstvo.lua
 	local time = os.time()
 	downloadUrlToFile("https://docs.google.com/spreadsheets/u/0/d/1hVwvPBD5PJT3CrHvsOIWGtJigGmMT5UfmgZsPJfu_Hk/export?format=tsv", temp, function(_, status)
 		if (status == 58) then
-            local file = io.open(temp, "r")
-            for line in file:lines() do
+			local file = io.open(temp, "r")
+			for line in file:lines() do
 				line = encoding.UTF8:decode(line)
 				local template = "(%w+_%w+)\t(.+)"
 				if (line:find(template)) then
@@ -639,10 +687,10 @@ function rmembers() -- взято из rukovodstvo.lua
 					check.rmembers[name] = office
 				end
 			end
-            file:close()
-            os.remove(temp)
+			file:close()
+			os.remove(temp)
 			else
-            if (os.time() - time > 10) then
+			if (os.time() - time > 10) then
 				chatmsg("Превышено время загрузки файла, повторите попытку", 0xFFFFFFFF)
 				return
 			end
@@ -680,6 +728,7 @@ function cmd_mem1()
 				table.insert(mem1[5], afk)
 			end
 		end
+		
 		
 		menu.members.v = true
 	end)
@@ -1015,7 +1064,7 @@ function onScriptTerminate(s, bool)
 		if not script.reload then
 			if not script.update then
 				if not script.unload then
-					chatmsg(u8:decode"Скрипт крашнулся: откройте консоль sampfuncs (кнопка ~), скопируйте текст ошибки и отправьте разработчику")
+					chatmsg(u8:decode"Скрипт крашнулся: отправьте moonloader.log разработчику tg: @Imykhailovich")
 					else
 					chatmsg(u8:decode"Скрипт был выгружен")
 				end
@@ -1027,3 +1076,6 @@ function onScriptTerminate(s, bool)
 		end
 	end
 end			
+
+
+
