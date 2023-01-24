@@ -1,6 +1,6 @@
 {
-  "version_num": 8,
-  "version_date": "22.01.2023",
+  "version_num": 9,
+  "version_date": "24.01.2023",
   "version_url": "https://raw.githubusercontent.com/WebbLua/SRPmembers/main/SRPmembers.lua",
    "version_label": {
              "Cody_Webb": {"color": "0xFFB30000", "text": "Основатель скрипта"},
@@ -9,6 +9,6 @@
              "vodka": {"color": "0xFFB30000", "text": "Основатель скрипта"}
   },
    "version_upd": {
-             "1": "Добавлена возможность проверять мемберс через диалог или чат (рекомендую диалог!!)"
+             "1": "Добавлена команда /marks [id/nick] - посмотреть отметки солдата ЛВА Revolution"
   }       
 }
