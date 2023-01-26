@@ -1,7 +1,7 @@
 script_name('SRPmembers')
 script_author("Cody_Webb | Telegram: @Imykhailovich")
-script_version("24.01.2023")
-script_version_number(9)
+script_version("26.01.2023")
+script_version_number(10)
 local script = {checked = false, available = false, update = false, v = {date, num}, url, reload, loaded, unload, quest = {}, upd = {changes = {}, sort = {}}, label = {}}
 local check = {bool = false, boolstream = false, stream = {}, findstream = false, status = false, amount = 0, irank = {}, line = 0, rmembers = {}, current = {}, mem1 = {}}
 -------------------------------------------------------------------------[Библиотеки/Зависимости]---------------------------------------------------------------------
@@ -608,23 +608,23 @@ function cmd_marks(sparams)
 			for line in file:lines() do
 				line = encoding.UTF8:decode(line)
 				local ranks = {
-				"Рядовой", "Ефрейтор", "Младший сержант", "Сержант", "Старший сержант", 
-				"Старшина", "Прапорщик", "Младший лейтенант", "Лейтенант", "Старший лейтенант", 
-				"Капитан", "Майор", "Подполковник", "Полковник", "Генерал"
-			}
-			local offrank, offtm, offwm, offdate = line:match('%["' .. nick .. '",(%d+),%[(%d+),(%d+)%],"(%d+/%d+/%d+ %d+%:%d+%:%d+)"%]')
-			if tonumber(offrank) ~= nil and tonumber(offtm) ~= nil and tonumber(offwm) ~= nil and offdate ~= nil then
-				found = true
-				local datetime = {}
-				datetime.year, datetime.month, datetime.day = offdate:match("(%d+)/(%d+)/(%d+) %d+%:%d+%:%d+")
-			local when = math.floor((os.difftime(os.time(), os.time(datetime))) / 3600 / 24)
-			chatmsg("{FF8300}-----------=== Offmembers Las-Venturas Army ===-----------")
-			chatmsg("{FF8300}" .. u8:decode(ranks[tonumber(offrank)]) .. " " .. nick .. (sampGetPlayerIdByNickname(nick) ~= nil and "[" .. sampGetPlayerIdByNickname(nick) .. "]" or ""))
-			chatmsg("{FF8300}" .. u8:decode"Сегодня отметок: " .. offtm)
-			chatmsg("{FF8300}" .. u8:decode"За неделю отметок: " .. offwm)
-			chatmsg("{FF8300}" .. u8:decode"Последний вход: " .. offdate .. " (" .. (when > 0 and when .. u8:decode" дней назад)" or u8:decode"сегодня)"))
-			chatmsg("{FF8300}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-			end
+					"Рядовой", "Ефрейтор", "Младший сержант", "Сержант", "Старший сержант", 
+					"Старшина", "Прапорщик", "Младший лейтенант", "Лейтенант", "Старший лейтенант", 
+					"Капитан", "Майор", "Подполковник", "Полковник", "Генерал"
+				}
+				local offrank, offtm, offwm, offdate = line:match('%["' .. nick .. '",(%d+),%[(%d+),(%d+)%],"(%d+/%d+/%d+ %d+%:%d+%:%d+)"%]')
+				if tonumber(offrank) ~= nil and tonumber(offtm) ~= nil and tonumber(offwm) ~= nil and offdate ~= nil then
+					found = true
+					local datetime = {}
+					datetime.year, datetime.month, datetime.day = offdate:match("(%d+)/(%d+)/(%d+) %d+%:%d+%:%d+")
+					local when = math.floor((os.difftime(os.time(), os.time(datetime))) / 3600 / 24)
+					chatmsg("{FF8300}-----------=== Offmembers Las-Venturas Army ===-----------")
+					chatmsg("{FF8300}" .. u8:decode(ranks[tonumber(offrank)]) .. " " .. nick .. (sampGetPlayerIdByNickname(nick) ~= nil and "[" .. sampGetPlayerIdByNickname(nick) .. "]" or ""))
+					chatmsg("{FF8300}" .. u8:decode"Сегодня отметок: " .. offtm)
+					chatmsg("{FF8300}" .. u8:decode"За неделю отметок: " .. offwm)
+					chatmsg("{FF8300}" .. u8:decode"Последний вход: " .. offdate .. " (" .. (when > 0 and when .. u8:decode" дней назад)" or u8:decode"сегодня)"))
+					chatmsg("{FF8300}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+				end
 			end
 			if not found then chatmsg(u8:decode"Отметки " .. nick .. u8:decode" не найдены!") end
 			file:close()
@@ -651,80 +651,80 @@ function getstream()
 			local id = sampGetPlayerIdByNickname(k)
 			if id ~= nil then
 				if sampGetCharHandleBySampPlayerId(id) then
-				if check.line == 0 then 
-				sampAddChatMessage("===========================================", 0xFFBFBFBF) 
-				check.line = check.line + 1 
+					if check.line == 0 then 
+						sampAddChatMessage("===========================================", 0xFFBFBFBF) 
+						check.line = check.line + 1 
+					end
+					local clist = "{" .. ("%06x"):format(bit.band(sampGetPlayerColor(id), 0xFFFFFF)) .. "}"
+					chatmsg(clist .. k .. "[" .. id .. "] {BFBFBF}" .. v .. (check.irank[v] ~= nil and "[" .. check.irank[v] .. "]" or "") .. (sampIsPlayerPaused(id) and " {008000}[AFK]" or "") .. u8:decode" - в зоне прорисовки")
+					check.findstream = true
 				end
-				local clist = "{" .. ("%06x"):format(bit.band(sampGetPlayerColor(id), 0xFFFFFF)) .. "}"
-				chatmsg(clist .. k .. "[" .. id .. "] {BFBFBF}" .. v .. (check.irank[v] ~= nil and "[" .. check.irank[v] .. "]" or "") .. (sampIsPlayerPaused(id) and " {008000}[AFK]" or "") .. u8:decode" - в зоне прорисовки")
-				check.findstream = true
-				end
-				end
-				end
-				if check.line ~= 0 then 
-				sampAddChatMessage("===========================================", 0xFFBFBFBF) 
-				check.line = 0
-				end
-				if not check.findstream then chatmsg(u8:decode"Никого не найдено из мемберса!") end
-				end)
-				end
-				
-				function removeFired()
-				for i = 0, 1000 do
-				if sampIsPlayerConnected(i) and srpmembers_ini.list[sampGetPlayerNickname(i)] ~= nil then
-				if check.current[sampGetPlayerNickname(i)] == nil then
+			end
+		end
+		if check.line ~= 0 then 
+			sampAddChatMessage("===========================================", 0xFFBFBFBF) 
+			check.line = 0
+		end
+		if not check.findstream then chatmsg(u8:decode"Никого не найдено из мемберса!") end
+	end)
+end
+
+function removeFired()
+	for i = 0, 1000 do
+		if sampIsPlayerConnected(i) and srpmembers_ini.list[sampGetPlayerNickname(i)] ~= nil then
+			if check.current[sampGetPlayerNickname(i)] == nil then
 				srpmembers_ini.list[sampGetPlayerNickname(i)] = nil
 				inicfg.save(srpmembers_ini, memb)
-				end
-				end
-				end
-				end
-				
-				function rmembers() -- взято из rukovodstvo.lua
-				check.rmembers = {}
-				local temp = os.tmpname()
-				local time = os.time()
-				downloadUrlToFile("https://docs.google.com/spreadsheets/u/0/d/1hVwvPBD5PJT3CrHvsOIWGtJigGmMT5UfmgZsPJfu_Hk/export?format=tsv", temp, function(_, status)
-				if (status == 58) then
-				local file = io.open(temp, "r")
-				for line in file:lines() do
+			end
+		end
+	end
+end
+
+function rmembers() -- взято из rukovodstvo.lua
+	check.rmembers = {}
+	local temp = os.tmpname()
+	local time = os.time()
+	downloadUrlToFile("https://docs.google.com/spreadsheets/u/0/d/1hVwvPBD5PJT3CrHvsOIWGtJigGmMT5UfmgZsPJfu_Hk/export?format=tsv", temp, function(_, status)
+		if (status == 58) then
+			local file = io.open(temp, "r")
+			for line in file:lines() do
 				line = encoding.UTF8:decode(line)
 				local template = "(%w+_%w+)\t(.+)"
 				if (line:find(template)) then
-				local name, office = line:match(template)
-				check.rmembers[name] = office
+					local name, office = line:match(template)
+					check.rmembers[name] = office
 				end
-				end
-				file:close()
-				os.remove(temp)
-				else
-				if (os.time() - time > 10) then
+			end
+			file:close()
+			os.remove(temp)
+			else
+			if (os.time() - time > 10) then
 				chatmsg("Превышено время загрузки файла, повторите попытку", 0xFFFFFFFF)
 				return
-				end
-				end
-				end)
-				end
-				
-				function sampGetPlayerIdByNickname(name)
-				local name = tostring(name)
-				local _, localId = sampGetPlayerIdByCharHandle(PLAYER_PED)
-				for i = 0, 1000 do
-				if (sampIsPlayerConnected(i) or localId == i) and sampGetPlayerNickname(i) == name then
-				return i
-				end
-				end
-				end
-				
-				function cmd_mem1()
-				lua_thread.create(function()
-				mem1 = {[1] = {}, [2] = {}, [3] ={}, [4] = {}, [5] = {}}
-				check.mem1 = {}
-				members()
-				while check.bool do wait(0) end
-				local n = 0
-				for k, v in pairs(check.mem1) do
-				if k ~= nil then
+			end
+		end
+	end)
+end
+
+function sampGetPlayerIdByNickname(name)
+	local name = tostring(name)
+	local _, localId = sampGetPlayerIdByCharHandle(PLAYER_PED)
+	for i = 0, 1000 do
+		if (sampIsPlayerConnected(i) or localId == i) and sampGetPlayerNickname(i) == name then
+			return i
+		end
+	end
+end
+
+function cmd_mem1()
+	lua_thread.create(function()
+		mem1 = {[1] = {}, [2] = {}, [3] ={}, [4] = {}, [5] = {}}
+		check.mem1 = {}
+		members()
+		while check.bool do wait(0) end
+		local n = 0
+		for k, v in pairs(check.mem1) do
+			if k ~= nil then
 				local afk = v.afk == nil and "" or v.afk
 				local clist = string.sub(string.format('%x', sampGetPlayerColor(v.id)), 3)
 				local clist = clist == "ffff" and "fffafa" or clist
@@ -734,357 +734,357 @@ function getstream()
 				table.insert(mem1[3], "{" .. clist .. "}" .. k .. "")
 				table.insert(mem1[4], "{fffafa}" .. v.rank .. "[" .. v.irank .. "]")
 				table.insert(mem1[5], afk)
-				end
-				end
-				
-				
-				menu.members.v = true
-				end)
-				end
-				-------------------------------------------[ChatManager -> взято из donatik.lua]------------------------------------------
-				chatManager = {}
-				chatManager.messagesQueue = {}
-				chatManager.messagesQueueSize = 1000
-				chatManager.antifloodClock = os.clock()
-				chatManager.lastMessage = ""
-				chatManager.antifloodDelay = 0.8
-				
-				function chatManager.initQueue() -- очистить всю очередь сообщений
-				for messageIndex = 1, chatManager.messagesQueueSize do
-				chatManager.messagesQueue[messageIndex] = {
-				message = "",
-				}
-				end
-				end
-				
-				function chatManager.addMessageToQueue(string, _nonRepeat) -- добавить сообщение в очередь
-				local isRepeat = false
-				local nonRepeat = _nonRepeat or false
-				
-				if nonRepeat then
-				for messageIndex = 1, chatManager.messagesQueueSize do
-				if string == chatManager.messagesQueue[messageIndex].message then
+			end
+		end
+		
+		
+		menu.members.v = true
+	end)
+end
+-------------------------------------------[ChatManager -> взято из donatik.lua]------------------------------------------
+chatManager = {}
+chatManager.messagesQueue = {}
+chatManager.messagesQueueSize = 1000
+chatManager.antifloodClock = os.clock()
+chatManager.lastMessage = ""
+chatManager.antifloodDelay = 0.8
+
+function chatManager.initQueue() -- очистить всю очередь сообщений
+	for messageIndex = 1, chatManager.messagesQueueSize do
+		chatManager.messagesQueue[messageIndex] = {
+			message = "",
+		}
+	end
+end
+
+function chatManager.addMessageToQueue(string, _nonRepeat) -- добавить сообщение в очередь
+	local isRepeat = false
+	local nonRepeat = _nonRepeat or false
+	
+	if nonRepeat then
+		for messageIndex = 1, chatManager.messagesQueueSize do
+			if string == chatManager.messagesQueue[messageIndex].message then
 				isRepeat = true
-				end
-				end
-				end
-				
-				if not isRepeat then
-				for messageIndex = 1, chatManager.messagesQueueSize - 1 do
-				chatManager.messagesQueue[messageIndex].message = chatManager.messagesQueue[messageIndex + 1].message
-				end
-				chatManager.messagesQueue[chatManager.messagesQueueSize].message = string
-				end
-				end
-				
-				function chatManager.checkMessagesQueueThread() -- проверить поток очереди сообщений
-				while true do
-				wait(0)
-				for messageIndex = 1, chatManager.messagesQueueSize do
-				local message = chatManager.messagesQueue[messageIndex]
-				if message.message ~= "" then
+			end
+		end
+	end
+	
+	if not isRepeat then
+		for messageIndex = 1, chatManager.messagesQueueSize - 1 do
+			chatManager.messagesQueue[messageIndex].message = chatManager.messagesQueue[messageIndex + 1].message
+		end
+		chatManager.messagesQueue[chatManager.messagesQueueSize].message = string
+	end
+end
+
+function chatManager.checkMessagesQueueThread() -- проверить поток очереди сообщений
+	while true do
+		wait(0)
+		for messageIndex = 1, chatManager.messagesQueueSize do
+			local message = chatManager.messagesQueue[messageIndex]
+			if message.message ~= "" then
 				if string.sub(chatManager.lastMessage, 1, 1) ~= "/" and string.sub(message.message, 1, 1) ~= "/" then
-				chatManager.antifloodDelay = chatManager.antifloodDelay + 0.5
+					chatManager.antifloodDelay = chatManager.antifloodDelay + 0.5
 				end
 				if os.clock() - chatManager.antifloodClock > chatManager.antifloodDelay then
-				
-				local sendMessage = true
-				
-				local command = string.match(message.message, "^(/[^ ]*).*")
-				
-				if sendMessage then
-				chatManager.lastMessage = u8:decode(message.message)
-				sampSendChat(u8:decode(message.message))
-				end
-				
-				message.message = ""
+					
+					local sendMessage = true
+					
+					local command = string.match(message.message, "^(/[^ ]*).*")
+					
+					if sendMessage then
+						chatManager.lastMessage = u8:decode(message.message)
+						sampSendChat(u8:decode(message.message))
+					end
+					
+					message.message = ""
 				end
 				chatManager.antifloodDelay = 0.8
-				end
-				end
-				end
-				end
-				
-				function chatManager.updateAntifloodClock() -- обновить задержку из-за определённых сообщений
-				chatManager.antifloodClock = os.clock()
-				if string.sub(chatManager.lastMessage, 1, 5) == "/sms " or string.sub(chatManager.lastMessage, 1, 3) == "/t " then
-				chatManager.antifloodClock = chatManager.antifloodClock + 0.5
-				end
-				end
-				--------------------------------------------------------------------------------------------------------------------------
-				textlabel = {}
-				function textLabelOverPlayerNickname()
-				for i = 0, 1000 do
-				if textlabel[i] ~= nil then
-				sampDestroy3dText(textlabel[i])
-				textlabel[i] = nil
-				end
-				end
-				for i = 0, 1000 do 
-				if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
-				local nick = sampGetPlayerNickname(i)
-				if script.label[nick] ~= nil then
+			end
+		end
+	end
+end
+
+function chatManager.updateAntifloodClock() -- обновить задержку из-за определённых сообщений
+	chatManager.antifloodClock = os.clock()
+	if string.sub(chatManager.lastMessage, 1, 5) == "/sms " or string.sub(chatManager.lastMessage, 1, 3) == "/t " then
+		chatManager.antifloodClock = chatManager.antifloodClock + 0.5
+	end
+end
+--------------------------------------------------------------------------------------------------------------------------
+textlabel = {}
+function textLabelOverPlayerNickname()
+	for i = 0, 1000 do
+		if textlabel[i] ~= nil then
+			sampDestroy3dText(textlabel[i])
+			textlabel[i] = nil
+		end
+	end
+	for i = 0, 1000 do 
+		if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
+			local nick = sampGetPlayerNickname(i)
+			if script.label[nick] ~= nil then
 				if textlabel[i] == nil then
-				textlabel[i] = sampCreate3dText(u8:decode(script.label[nick].text), tonumber(script.label[nick].color), 0.0, 0.0, 0.8, 21.5, false, i, -1)
+					textlabel[i] = sampCreate3dText(u8:decode(script.label[nick].text), tonumber(script.label[nick].color), 0.0, 0.0, 0.8, 21.5, false, i, -1)
 				end
-				end
-				else
-				if textlabel[i] ~= nil then
+			end
+			else
+			if textlabel[i] ~= nil then
 				sampDestroy3dText(textlabel[i])
 				textlabel[i] = nil
-				end
-				end
-				end
-				end
-				
-				ranklabel = {}
-				function rankLabelOverPlayerNickname()
-				for i = 0, 1000 do
-				if ranklabel[i] ~= nil then
-				sampDestroy3dText(ranklabel[i])
-				ranklabel[i] = nil
-				end
-				end
-				for i = 0, 1000 do 
-				if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
-				local nick = sampGetPlayerNickname(i)
-				if srpmembers_ini.list[nick] ~= nil then
+			end
+		end
+	end
+end
+
+ranklabel = {}
+function rankLabelOverPlayerNickname()
+	for i = 0, 1000 do
+		if ranklabel[i] ~= nil then
+			sampDestroy3dText(ranklabel[i])
+			ranklabel[i] = nil
+		end
+	end
+	for i = 0, 1000 do 
+		if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
+			local nick = sampGetPlayerNickname(i)
+			if srpmembers_ini.list[nick] ~= nil then
 				if ranklabel[i] == nil then
-				ranklabel[i] = sampCreate3dText(srpmembers_ini.list[nick], 0xFFFFFAFA, 0.0, 0.0, 0.4, 22, false, i, -1)
+					ranklabel[i] = sampCreate3dText(srpmembers_ini.list[nick], 0xFFFFFAFA, 0.0, 0.0, 0.4, 22, false, i, -1)
 				end
-				end
-				else
-				if ranklabel[i] ~= nil then
+			end
+			else
+			if ranklabel[i] ~= nil then
 				sampDestroy3dText(ranklabel[i])
 				ranklabel[i] = nil
-				end
-				end
-				end
-				end
-				
-				postlabel = {}
-				function postLabelOverPlayerNickname()
-				for i = 0, 1000 do
-				if postlabel[i] ~= nil then
-				sampDestroy3dText(postlabel[i])
-				postlabel[i] = nil
-				end
-				end
-				for i = 0, 1000 do 
-				if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
-				local nick = sampGetPlayerNickname(i)
-				if check.rmembers[nick] ~= nil then
+			end
+		end
+	end
+end
+
+postlabel = {}
+function postLabelOverPlayerNickname()
+	for i = 0, 1000 do
+		if postlabel[i] ~= nil then
+			sampDestroy3dText(postlabel[i])
+			postlabel[i] = nil
+		end
+	end
+	for i = 0, 1000 do 
+		if sampIsPlayerConnected(i) and sampGetPlayerScore(i) ~= 0 then
+			local nick = sampGetPlayerNickname(i)
+			if check.rmembers[nick] ~= nil then
 				if postlabel[i] == nil then
-				postlabel[i] = sampCreate3dText(check.rmembers[nick], 0xFF046901, 0.0, 0.0, 0.60, 22, false, i, -1)
+					postlabel[i] = sampCreate3dText(check.rmembers[nick], 0xFF046901, 0.0, 0.0, 0.60, 22, false, i, -1)
 				end
-				end
-				else
-				if postlabel[i] ~= nil then
+			end
+			else
+			if postlabel[i] ~= nil then
 				sampDestroy3dText(postlabel[i])
 				postlabel[i] = nil
-				end
-				end
-				end
-				end
-				
-				function chatmsg(t)
-				sampAddChatMessage(prefix .. t, main_color)
-				end
-				
-				function makeHotKey(numkey)
-				local rett = {}
-				for _, v in ipairs(string.split(srpmemb_ini.hotkey[numkey], ", ")) do
-				if tonumber(v) ~= 0 then table.insert(rett, tonumber(v)) end
-				end
-				return rett
-				end
-				
-				function string.split(str, delim, plain) -- bh FYP
-				local tokens, pos, plain = {}, 1, not (plain == false) --[[ delimiter is plain text by default ]]
-				repeat
-				local npos, epos = string.find(str, delim, pos, plain)
-				table.insert(tokens, string.sub(str, pos, npos and npos - 1))
-				pos = epos and epos + 1
-				until not pos
-				return tokens
-				end
-				
-				function imgui.Hotkey(name, numkey, width)
-				imgui.BeginChild(name, imgui.ImVec2(width, 32), true)
-				imgui.PushItemWidth(width)
-				
-				local hstr = ""
-				for _, v in ipairs(string.split(srpmemb_ini.hotkey[numkey], ", ")) do
-				if v ~= "0" then
-				hstr = hstr == "" and tostring(vkeys.id_to_name(tonumber(v))) or "" .. hstr .. " + " .. tostring(vkeys.id_to_name(tonumber(v))) .. ""
-				end
-				end
-				hstr = (hstr == "" or hstr == "nil") and "Нет клавиши" or hstr
-				
-				imgui.Text(hstr)
-				imgui.PopItemWidth()
-				imgui.EndChild()
-				if imgui.IsItemClicked() then
-				lua_thread.create(
-				function()
+			end
+		end
+	end
+end
+
+function chatmsg(t)
+	sampAddChatMessage(prefix .. t, main_color)
+end
+
+function makeHotKey(numkey)
+	local rett = {}
+	for _, v in ipairs(string.split(srpmemb_ini.hotkey[numkey], ", ")) do
+		if tonumber(v) ~= 0 then table.insert(rett, tonumber(v)) end
+	end
+	return rett
+end
+
+function string.split(str, delim, plain) -- bh FYP
+	local tokens, pos, plain = {}, 1, not (plain == false) --[[ delimiter is plain text by default ]]
+	repeat
+		local npos, epos = string.find(str, delim, pos, plain)
+		table.insert(tokens, string.sub(str, pos, npos and npos - 1))
+		pos = epos and epos + 1
+	until not pos
+	return tokens
+end
+
+function imgui.Hotkey(name, numkey, width)
+	imgui.BeginChild(name, imgui.ImVec2(width, 32), true)
+	imgui.PushItemWidth(width)
+	
+	local hstr = ""
+	for _, v in ipairs(string.split(srpmemb_ini.hotkey[numkey], ", ")) do
+		if v ~= "0" then
+			hstr = hstr == "" and tostring(vkeys.id_to_name(tonumber(v))) or "" .. hstr .. " + " .. tostring(vkeys.id_to_name(tonumber(v))) .. ""
+		end
+	end
+	hstr = (hstr == "" or hstr == "nil") and "Нет клавиши" or hstr
+	
+	imgui.Text(hstr)
+	imgui.PopItemWidth()
+	imgui.EndChild()
+	if imgui.IsItemClicked() then
+		lua_thread.create(
+			function()
 				local curkeys = ""
 				local tbool = false
 				while true do
-				wait(0)
-				if not tbool then
-				for k, v in pairs(vkeys) do
-				sv = tostring(v)
-				if isKeyDown(v) and (v == vkeys.VK_MENU or v == vkeys.VK_CONTROL or v == vkeys.VK_SHIFT or v == vkeys.VK_LMENU or v == vkeys.VK_RMENU or v == vkeys.VK_RCONTROL or v == vkeys.VK_LCONTROL or v == vkeys.VK_LSHIFT or v == vkeys.VK_RSHIFT) then
-				if v ~= vkeys.VK_MENU and v ~= vkeys.VK_CONTROL and v ~= vkeys.VK_SHIFT then
-				if not curkeys:find(sv) then
-				curkeys = tostring(curkeys):len() == 0 and sv or curkeys .. " " .. sv
-				end
-				end
-				end
-				end
-				
-				for k, v in pairs(vkeys) do
-				sv = tostring(v)
-				if isKeyDown(v) and (v ~= vkeys.VK_MENU and v ~= vkeys.VK_CONTROL and v ~= vkeys.VK_SHIFT and v ~= vkeys.VK_LMENU and v ~= vkeys.VK_RMENU and v ~= vkeys.VK_RCONTROL and v ~= vkeys.VK_LCONTROL and v ~= vkeys.VK_LSHIFT and v ~=vkeys. VK_RSHIFT) then
-				if not curkeys:find(sv) then
-				curkeys = tostring(curkeys):len() == 0 and sv or curkeys .. " " .. sv
-				tbool = true
-				end
-				end
-				end
-				else
-				tbool2 = false
-				for k, v in pairs(vkeys) do
-				sv = tostring(v)
-				if isKeyDown(v) and (v ~= vkeys.VK_MENU and v ~= vkeys.VK_CONTROL and v ~= vkeys.VK_SHIFT and v ~= vkeys.VK_LMENU and v ~= vkeys.VK_RMENU and v ~= vkeys.VK_RCONTROL and v ~= vkeys.VK_LCONTROL and v ~= vkeys.VK_LSHIFT and v ~=vkeys. VK_RSHIFT) then
-				tbool2 = true
-				if not curkeys:find(sv) then
-				curkeys = tostring(curkeys):len() == 0 and sv or curkeys .. " " .. sv
-				end
-				end
-				end
-				
-				if not tbool2 then break end
-				end
+					wait(0)
+					if not tbool then
+						for k, v in pairs(vkeys) do
+							sv = tostring(v)
+							if isKeyDown(v) and (v == vkeys.VK_MENU or v == vkeys.VK_CONTROL or v == vkeys.VK_SHIFT or v == vkeys.VK_LMENU or v == vkeys.VK_RMENU or v == vkeys.VK_RCONTROL or v == vkeys.VK_LCONTROL or v == vkeys.VK_LSHIFT or v == vkeys.VK_RSHIFT) then
+								if v ~= vkeys.VK_MENU and v ~= vkeys.VK_CONTROL and v ~= vkeys.VK_SHIFT then
+									if not curkeys:find(sv) then
+										curkeys = tostring(curkeys):len() == 0 and sv or curkeys .. " " .. sv
+									end
+								end
+							end
+						end
+						
+						for k, v in pairs(vkeys) do
+							sv = tostring(v)
+							if isKeyDown(v) and (v ~= vkeys.VK_MENU and v ~= vkeys.VK_CONTROL and v ~= vkeys.VK_SHIFT and v ~= vkeys.VK_LMENU and v ~= vkeys.VK_RMENU and v ~= vkeys.VK_RCONTROL and v ~= vkeys.VK_LCONTROL and v ~= vkeys.VK_LSHIFT and v ~=vkeys. VK_RSHIFT) then
+								if not curkeys:find(sv) then
+									curkeys = tostring(curkeys):len() == 0 and sv or curkeys .. " " .. sv
+									tbool = true
+								end
+							end
+						end
+						else
+						tbool2 = false
+						for k, v in pairs(vkeys) do
+							sv = tostring(v)
+							if isKeyDown(v) and (v ~= vkeys.VK_MENU and v ~= vkeys.VK_CONTROL and v ~= vkeys.VK_SHIFT and v ~= vkeys.VK_LMENU and v ~= vkeys.VK_RMENU and v ~= vkeys.VK_RCONTROL and v ~= vkeys.VK_LCONTROL and v ~= vkeys.VK_LSHIFT and v ~=vkeys. VK_RSHIFT) then
+								tbool2 = true
+								if not curkeys:find(sv) then
+									curkeys = tostring(curkeys):len() == 0 and sv or curkeys .. " " .. sv
+								end
+							end
+						end
+						
+						if not tbool2 then break end
+					end
 				end
 				
 				local keys = ""
 				if tonumber(curkeys) == vkeys.VK_BACK then
-				srpmemb_ini.hotkey[numkey] = "0"
-				else
-				local tNames = string.split(curkeys, " ")
-				for _, v in ipairs(tNames) do
-				local val = (tonumber(v) == 162 or tonumber(v) == 163) and 17 or (tonumber(v) == 160 or tonumber(v) == 161) and 16 or (tonumber(v) == 164 or tonumber(v) == 165) and 18 or tonumber(v)
-				keys = keys == "" and val or "" .. keys .. ", " .. val .. ""
-				end
+					srpmemb_ini.hotkey[numkey] = "0"
+					else
+					local tNames = string.split(curkeys, " ")
+					for _, v in ipairs(tNames) do
+						local val = (tonumber(v) == 162 or tonumber(v) == 163) and 17 or (tonumber(v) == 160 or tonumber(v) == 161) and 16 or (tonumber(v) == 164 or tonumber(v) == 165) and 18 or tonumber(v)
+						keys = keys == "" and val or "" .. keys .. ", " .. val .. ""
+					end
 				end
 				
 				srpmemb_ini.hotkey[numkey] = keys
 				inicfg.save(srpmemb_ini, settings)
-				end
-				)
-				end
-				end
-				
-				function checkUpdates() -- проверка обновлений
-				local fpath = os.tmpname()
-				if doesFileExist(fpath) then os.remove(fpath) end
-				downloadUrlToFile("https://raw.githubusercontent.com/WebbLua/SRPmembers/main/version.json", fpath, function(_, status, _, _)
-				if status == 58 then
-				if doesFileExist(fpath) then
+			end
+		)
+	end
+end
+
+function checkUpdates() -- проверка обновлений
+	local fpath = os.tmpname()
+	if doesFileExist(fpath) then os.remove(fpath) end
+	downloadUrlToFile("https://raw.githubusercontent.com/WebbLua/SRPmembers/main/version.json", fpath, function(_, status, _, _)
+		if status == 58 then
+			if doesFileExist(fpath) then
 				local file = io.open(fpath, 'r')
 				if file then
-				local info = decodeJson(file:read('*a'))
-				file:close()
-				os.remove(fpath)
-				script.v.num = info.version_num
-				script.v.date = info.version_date
-				script.url = info.version_url
-				script.label = info.version_label
-				script.upd.changes = info.version_upd
-				if script.upd.changes then
-				for k in pairs(script.upd.changes) do
-				table.insert(script.upd.sort, k)
-				end
-				table.sort(script.upd.sort, function(a, b) return a > b end)
-				end
-				script.checked = true
-				if info['version_num'] > thisScript()['version_num'] then
-				script.available = true
-				if script.update then updateScript() return end
-				chatmsg(updatingprefix .. u8:decode"Обнаружена новая версия скрипта от " .. info['version_date'] .. u8:decode", пропишите /membup для обновления")
-				chatmsg(updatingprefix .. u8:decode"Изменения в новой версии:")
-				if script.upd.sort ~= {} then
-				for k in ipairs(script.upd.sort) do
-				if script.upd.changes[tostring(k)] ~= nil then
-				chatmsg(updatingprefix .. k .. ') ' .. u8:decode(script.upd.changes[tostring(k)]))
-				end
-				end
-				end
-				return true
-				else
-				if script.update then chatmsg(u8:decode"Обновлений не обнаружено, вы используете самую актуальную версию: v" .. script.v.num .. u8:decode" за " .. script.v.date) script.update = false return end
+					local info = decodeJson(file:read('*a'))
+					file:close()
+					os.remove(fpath)
+					script.v.num = info.version_num
+					script.v.date = info.version_date
+					script.url = info.version_url
+					script.label = info.version_label
+					script.upd.changes = info.version_upd
+					if script.upd.changes then
+						for k in pairs(script.upd.changes) do
+							table.insert(script.upd.sort, k)
+						end
+						table.sort(script.upd.sort, function(a, b) return a > b end)
+					end
+					script.checked = true
+					if info['version_num'] > thisScript()['version_num'] then
+						script.available = true
+						if script.update then updateScript() return end
+						chatmsg(updatingprefix .. u8:decode"Обнаружена новая версия скрипта от " .. info['version_date'] .. u8:decode", пропишите /membup для обновления")
+						chatmsg(updatingprefix .. u8:decode"Изменения в новой версии:")
+						if script.upd.sort ~= {} then
+							for k in ipairs(script.upd.sort) do
+								if script.upd.changes[tostring(k)] ~= nil then
+									chatmsg(updatingprefix .. k .. ') ' .. u8:decode(script.upd.changes[tostring(k)]))
+								end
+							end
+						end
+						return true
+						else
+						if script.update then chatmsg(u8:decode"Обновлений не обнаружено, вы используете самую актуальную версию: v" .. script.v.num .. u8:decode" за " .. script.v.date) script.update = false return end
+					end
+					else
+					chatmsg(u8:decode"Не удалось получить информацию про обновления(")
+					thisScript():unload()
 				end
 				else
 				chatmsg(u8:decode"Не удалось получить информацию про обновления(")
 				thisScript():unload()
-				end
-				else
-				chatmsg(u8:decode"Не удалось получить информацию про обновления(")
-				thisScript():unload()
-				end
-				end
-				end)
-				end
-				
-				function updateScript()
-				script.update = true
-				if script.available then
-				downloadUrlToFile(script.url, thisScript().path, function(_, status, _, _)
-				if status == 6 then
+			end
+		end
+	end)
+end
+
+function updateScript()
+	script.update = true
+	if script.available then
+		downloadUrlToFile(script.url, thisScript().path, function(_, status, _, _)
+			if status == 6 then
 				chatmsg(updatingprefix .. u8:decode"Скрипт был обновлён!")
 				if script.find("ML-AutoReboot") == nil then
-				thisScript():reload()
+					thisScript():reload()
 				end
-				end
-				end)
-				else
-				checkUpdates()
-				end
-				end
-				
-				function onScriptTerminate(s, bool)
-				if s == thisScript() and not bool then
-				for i = 0, 1000 do
-				if textlabel[i] ~= nil then
+			end
+		end)
+		else
+		checkUpdates()
+	end
+end
+
+function onScriptTerminate(s, bool)
+	if s == thisScript() and not bool then
+		for i = 0, 1000 do
+			if textlabel[i] ~= nil then
 				sampDestroy3dText(textlabel[i])
 				textlabel[i] = nil
-				end
-				if ranklabel[i] ~= nil then
+			end
+			if ranklabel[i] ~= nil then
 				sampDestroy3dText(ranklabel[i])
 				ranklabel[i] = nil
-				end
-				if postlabel[i] ~= nil then
+			end
+			if postlabel[i] ~= nil then
 				sampDestroy3dText(postlabel[i])
 				postlabel[i] = nil
-				end
-				end
-				if not script.reload then
-				if not script.update then
+			end
+		end
+		if not script.reload then
+			if not script.update then
 				if not script.unload then
-				chatmsg(u8:decode"Скрипт крашнулся: отправьте moonloader.log разработчику tg: @Imykhailovich")
-				else
-				chatmsg(u8:decode"Скрипт был выгружен")
+					chatmsg(u8:decode"Скрипт крашнулся: отправьте moonloader.log разработчику tg: @Imykhailovich")
+					else
+					chatmsg(u8:decode"Скрипт был выгружен")
 				end
 				else
 				chatmsg(updatingprefix .. u8:decode"Старый скрипт был выгружен, загружаю обновлённую версию...")
-				end
-				else
-				chatmsg(u8:decode"Перезагружаюсь...")
-				end
-				end
-				end			
-				
-				
-				
-								
+			end
+			else
+			chatmsg(u8:decode"Перезагружаюсь...")
+		end
+	end
+end			
+
+
+
+
