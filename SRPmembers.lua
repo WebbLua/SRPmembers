@@ -11,6 +11,7 @@ imgui.ToggleButton = require('imgui_addons').ToggleButton
 local vkeys = require 'vkeys'
 local rkeys = require 'rkeys'
 local inicfg = require 'inicfg'
+local dlstatus = require "moonloader".download_status
 local encoding = require 'encoding'
 encoding.default = 'CP1251'
 u8 = encoding.UTF8
@@ -58,10 +59,10 @@ function main()
 	if not isSampLoaded() or not isSampfuncsLoaded() then return end
 	while not isSampAvailable() do wait(0) end
 	
-	repeat wait(0) until sampGetCurrentServerName() ~= "SA-MP"
+	while sampGetCurrentServerName() == "SA-MP" do wait(0) end
 	server = sampGetCurrentServerName():gsub('|', '')
 	server = (server:find('02') and 'Two' or (server:find('Revo') and 'Revolution' or (server:find('Legacy') and 'Legacy' or (server:find('Classic') and 'Classic' or nil))))
-    if server == nil then chatmsg(u8:decode'Данный сервер не поддерживается, выгружаюсь...') script.unload = true thisScript():unload() end
+    if server == nil then script.sendMessage('Данный сервер не поддерживается, выгружаюсь...') script.unload = true thisScript():unload() end
 	currentNick = sampGetPlayerNickname(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)))
 	
 	AdressConfig = string.format("%s\\config", thisScript().directory)
@@ -103,13 +104,12 @@ function main()
 	sampRegisterChatCommand('marks', cmd_marks)
 	
 	script.loaded = true
-	repeat wait(0) until sampIsLocalPlayerSpawned()
+	while sampGetGamestate() ~= 3 do wait(0) end
+	while sampGetPlayerScore(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED))) <= 0 and not sampIsLocalPlayerSpawned() do wait(0) end
 	checkUpdates()
-	chatmsg(u8:decode"Скрипт запущен. Открыть главное меню - /memb")
-	needtoreload = true
-	
+	script.sendMessage("Скрипт запущен. Открыть главное меню - /memb")
 	imgui.Process = true
-	imgui.ShowCursor = false
+	needtoreload = true
 	
 	
 	chatManager.initQueue()
@@ -376,7 +376,7 @@ function imgui.OnDrawFrame()
 		end
 		if not found then
 			if imgui.Button("Cody Webb сейчас не в сети", imgui.ImVec2(245.0, 30.0)) then
-				chatmsg(u8:decode"Cody Webb играет на Revolution (сейчас не онлайн)", main_color)
+				script.sendMessage("Cody Webb играет на Revolution (сейчас не онлайн)")
 			end
 		end
 		
@@ -390,6 +390,7 @@ function imgui.OnDrawFrame()
 		imgui.End()
 		imgui.PopFont()
 	end
+	
 	if menu.members.v then
 		imgui.SwitchContext()
 		colors[clr.WindowBg] = ImVec4(0.06, 0.06, 0.06, 0.94)
@@ -496,7 +497,7 @@ function ev.onServerMessage(col, text)
 						check.bool = false
 						removeFired()
 						if not check.boolstream then
-							chatmsg(u8:decode"Успешно проверил мемберс - " .. check.amount .. u8:decode(" человек онлайн"))
+							script.sendMessage("Успешно проверил мемберс - " .. check.amount .. " человек онлайн")
 							else
 							check.boolstream = false
 						end
@@ -557,7 +558,7 @@ function ev.onShowDialog(dialogid, style, title, button1, button2, text)
 				sampCloseCurrentDialogWithButton(0)
 				check.bool = false
 				if not check.boolstream then
-					chatmsg(u8:decode"Успешно проверил мемберс - " .. check.amount .. u8:decode(" человек онлайн"))
+					script.sendMessage("Успешно проверил мемберс - " .. check.amount .. " человек онлайн")
 					else
 					check.boolstream = false
 				end
@@ -585,7 +586,7 @@ function members()
 end
 
 function cmd_marks(sparams)
-	if sparams == "" then chatmsg(u8:decode"Неверный параметр. Введите /marks [id/nick]") return end
+	if sparams == "" then script.sendMessage("Неверный параметр. Введите /marks [id/nick]") return end
 	local params = {}
 	for v in string.gmatch(sparams, "[^%s]+") do table.insert(params, v) end
 	local id = -1
@@ -593,7 +594,7 @@ function cmd_marks(sparams)
 	if id ~= -1 then 
 		if not sampIsPlayerConnected(tonumber(params[1])) then
 			if id ~= select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)) then
-				chatmsg(u8:decode"Игрок оффлайн")
+				script.sendMessage("Игрок оффлайн")
 				return
 			end
 		end
@@ -618,20 +619,20 @@ function cmd_marks(sparams)
 					local datetime = {}
 					datetime.year, datetime.month, datetime.day = offdate:match("(%d+)/(%d+)/(%d+) %d+%:%d+%:%d+")
 					local when = math.floor((os.difftime(os.time(), os.time(datetime))) / 3600 / 24)
-					chatmsg("{FF8300}-----------=== Offmembers Las-Venturas Army ===-----------")
-					chatmsg("{FF8300}" .. u8:decode(ranks[tonumber(offrank)]) .. " " .. nick .. (sampGetPlayerIdByNickname(nick) ~= nil and "[" .. sampGetPlayerIdByNickname(nick) .. "]" or ""))
-					chatmsg("{FF8300}" .. u8:decode"Сегодня отметок: " .. offtm)
-					chatmsg("{FF8300}" .. u8:decode"За неделю отметок: " .. offwm)
-					chatmsg("{FF8300}" .. u8:decode"Последний вход: " .. offdate .. " (" .. (when > 0 and when .. u8:decode" дней назад)" or u8:decode"сегодня)"))
-					chatmsg("{FF8300}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+					script.sendMessage("{FF8300}-----------=== Offmembers Las-Venturas Army ===-----------")
+					script.sendMessage("{FF8300}" .. ranks[tonumber(offrank)] .. " " .. nick .. (sampGetPlayerIdByNickname(nick) ~= nil and "[" .. sampGetPlayerIdByNickname(nick) .. "]" or ""))
+					script.sendMessage("{FF8300}" .. "Сегодня отметок: " .. offtm)
+					script.sendMessage("{FF8300}" .. "За неделю отметок: " .. offwm)
+					script.sendMessage("{FF8300}" .. "Последний вход: " .. offdate .. " (" .. (when > 0 and when .. " дней назад" or "сегодня") .. ")")
+					script.sendMessage("{FF8300}~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 				end
 			end
-			if not found then chatmsg(u8:decode"Отметки " .. nick .. u8:decode" не найдены!") end
+			if not found then script.sendMessage("Отметки " .. nick .. " не найдены!") end
 			file:close()
 			os.remove(temp)
 			else
 			if (os.time() - time > 10) then
-				chatmsg("Превышено время загрузки файла, повторите попытку", 0xFFFFFFFF)
+				script.sendMessage("Превышено время загрузки файла, повторите попытку")
 				return
 			end
 		end
@@ -656,7 +657,7 @@ function getstream()
 						check.line = check.line + 1 
 					end
 					local clist = "{" .. ("%06x"):format(bit.band(sampGetPlayerColor(id), 0xFFFFFF)) .. "}"
-					chatmsg(clist .. k .. "[" .. id .. "] {BFBFBF}" .. v .. (check.irank[v] ~= nil and "[" .. check.irank[v] .. "]" or "") .. (sampIsPlayerPaused(id) and " {008000}[AFK]" or "") .. u8:decode" - в зоне прорисовки")
+					script.sendMessage(clist .. k .. "[" .. id .. "] {BFBFBF}" .. v .. (check.irank[v] ~= nil and "[" .. check.irank[v] .. "]" or "") .. (sampIsPlayerPaused(id) and " {008000}[AFK]" or "") .. " - в зоне прорисовки")
 					check.findstream = true
 				end
 			end
@@ -665,7 +666,7 @@ function getstream()
 			sampAddChatMessage("===========================================", 0xFFBFBFBF) 
 			check.line = 0
 		end
-		if not check.findstream then chatmsg(u8:decode"Никого не найдено из мемберса!") end
+		if not check.findstream then script.sendMessage("Никого не найдено из мемберса!") end
 	end)
 end
 
@@ -699,7 +700,7 @@ function rmembers() -- взято из rukovodstvo.lua
 			os.remove(temp)
 			else
 			if (os.time() - time > 10) then
-				chatmsg("Превышено время загрузки файла, повторите попытку", 0xFFFFFFFF)
+				script.sendMessage("Превышено время загрузки файла, повторите попытку")
 				return
 			end
 		end
@@ -736,8 +737,6 @@ function cmd_mem1()
 				table.insert(mem1[5], afk)
 			end
 		end
-		
-		
 		menu.members.v = true
 	end)
 end
@@ -887,8 +886,8 @@ function postLabelOverPlayerNickname()
 	end
 end
 
-function chatmsg(t)
-	sampAddChatMessage(prefix .. t, main_color)
+function script.sendMessage(t)
+	sampAddChatMessage(prefix .. u8:decode(t), main_color)
 end
 
 function makeHotKey(numkey)
@@ -987,10 +986,9 @@ function imgui.Hotkey(name, numkey, width)
 end
 
 function checkUpdates() -- проверка обновлений
-	local fpath = os.tmpname()
-	if doesFileExist(fpath) then os.remove(fpath) end
+	local fpath = getWorkingDirectory() .. '/SRPmembers.dat'
 	downloadUrlToFile("https://raw.githubusercontent.com/WebbLua/SRPmembers/main/version.json", fpath, function(_, status, _, _)
-		if status == 58 then
+		if status == dlstatus.STATUSEX_ENDDOWNLOAD then
 			if doesFileExist(fpath) then
 				local file = io.open(fpath, 'r')
 				if file then
@@ -1012,25 +1010,25 @@ function checkUpdates() -- проверка обновлений
 					if info['version_num'] > thisScript()['version_num'] then
 						script.available = true
 						if script.update then updateScript() return end
-						chatmsg(updatingprefix .. u8:decode"Обнаружена новая версия скрипта от " .. info['version_date'] .. u8:decode", пропишите /membup для обновления")
-						chatmsg(updatingprefix .. u8:decode"Изменения в новой версии:")
+						script.sendMessage(updatingprefix .. "Обнаружена новая версия скрипта от " .. info['version_date'] .. ", пропишите /membup для обновления")
+						script.sendMessage(updatingprefix .. "Изменения в новой версии:")
 						if script.upd.sort ~= {} then
 							for k in ipairs(script.upd.sort) do
 								if script.upd.changes[tostring(k)] ~= nil then
-									chatmsg(updatingprefix .. k .. ') ' .. u8:decode(script.upd.changes[tostring(k)]))
+									script.sendMessage(updatingprefix .. k .. ') ' .. script.upd.changes[tostring(k)])
 								end
 							end
 						end
 						return true
 						else
-						if script.update then chatmsg(u8:decode"Обновлений не обнаружено, вы используете самую актуальную версию: v" .. script.v.num .. u8:decode" за " .. script.v.date) script.update = false return end
+						if script.update then script.sendMessage("Обновлений не обнаружено, вы используете самую актуальную версию: v" .. script.v.num .. " за " .. script.v.date) script.update = false return end
 					end
 					else
-					chatmsg(u8:decode"Не удалось получить информацию про обновления(")
+					script.sendMessage("Не удалось получить информацию про обновления(")
 					thisScript():unload()
 				end
 				else
-				chatmsg(u8:decode"Не удалось получить информацию про обновления(")
+				script.sendMessage("Не удалось получить информацию про обновления(")
 				thisScript():unload()
 			end
 		end
@@ -1042,7 +1040,7 @@ function updateScript()
 	if script.available then
 		downloadUrlToFile(script.url, thisScript().path, function(_, status, _, _)
 			if status == 6 then
-				chatmsg(updatingprefix .. u8:decode"Скрипт был обновлён!")
+				script.sendMessage(updatingprefix .. "Скрипт был обновлён!")
 				if script.find("ML-AutoReboot") == nil then
 					thisScript():reload()
 				end
@@ -1055,6 +1053,7 @@ end
 
 function onScriptTerminate(s, bool)
 	if s == thisScript() and not bool then
+		imgui.Process = false
 		for i = 0, 1000 do
 			if textlabel[i] ~= nil then
 				sampDestroy3dText(textlabel[i])
@@ -1072,18 +1071,19 @@ function onScriptTerminate(s, bool)
 		if not script.reload then
 			if not script.update then
 				if not script.unload then
-					chatmsg(u8:decode"Скрипт крашнулся: отправьте moonloader.log разработчику tg: @Imykhailovich")
+					script.sendMessage("Скрипт крашнулся: отправьте moonloader.log разработчику tg: @Imykhailovich")
 					else
-					chatmsg(u8:decode"Скрипт был выгружен")
+					script.sendMessage("Скрипт был выгружен")
 				end
 				else
-				chatmsg(updatingprefix .. u8:decode"Старый скрипт был выгружен, загружаю обновлённую версию...")
+				script.sendMessage(updatingprefix .. "Старый скрипт был выгружен, загружаю обновлённую версию...")
 			end
 			else
-			chatmsg(u8:decode"Перезагружаюсь...")
+			script.sendMessage("Перезагружаюсь...")
 		end
 	end
-end			
+end		
+
 
 
 
