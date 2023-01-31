@@ -1,5 +1,5 @@
 {
-  "version_num": 11,
+  "version_num": 12,
   "version_date": "31.01.2023",
   "version_url": "https://raw.githubusercontent.com/WebbLua/SRPmembers/main/SRPmembers.lua",
    "version_label": {
@@ -9,6 +9,7 @@
              "vodka": {"color": "0xFFB30000", "text": "Основатель скрипта"}
   },
    "version_upd": {
-             "1": "Изменена функция отправки локальных сообщений"
+             "1": "Изменена функция отправки локальных сообщений",
+             "2": "Пофикшен префикс обновления"
   }       
 }
