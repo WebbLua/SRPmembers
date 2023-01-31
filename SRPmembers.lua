@@ -1,7 +1,7 @@
 script_name('SRPmembers')
 script_author("Cody_Webb | Telegram: @Imykhailovich")
-script_version("26.01.2023")
-script_version_number(10)
+script_version("31.01.2023")
+script_version_number(11)
 local script = {checked = false, available = false, update = false, v = {date, num}, url, reload, loaded, unload, quest = {}, upd = {changes = {}, sort = {}}, label = {}}
 local check = {bool = false, boolstream = false, stream = {}, findstream = false, status = false, amount = 0, irank = {}, line = 0, rmembers = {}, current = {}, mem1 = {}}
 -------------------------------------------------------------------------[Библиотеки/Зависимости]---------------------------------------------------------------------
