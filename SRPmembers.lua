@@ -1,7 +1,7 @@
 script_name('SRPmembers')
 script_author("Cody_Webb | Telegram: @Imykhailovich")
-script_version("31.01.2023")
-script_version_number(11)
+script_version("26.01.2023")
+script_version_number(10)
 local script = {checked = false, available = false, update = false, v = {date, num}, url, reload, loaded, unload, quest = {}, upd = {changes = {}, sort = {}}, label = {}}
 local check = {bool = false, boolstream = false, stream = {}, findstream = false, status = false, amount = 0, irank = {}, line = 0, rmembers = {}, current = {}, mem1 = {}}
 -------------------------------------------------------------------------[Библиотеки/Зависимости]---------------------------------------------------------------------
@@ -33,7 +33,7 @@ local memberslist = {
 -------------------------------------------------------------------------[Переменные и маcсивы]-----------------------------------------------------------------
 local main_color = 0x41491d
 local prefix = "{41491d}[SRPmembers] {FFFAFA}"
-local updatingprefix = u8:decode"{FF0000}[ОБНОВЛЕНИЕ] {FFFAFA}"
+local updatingprefix = "{FF0000}[ОБНОВЛЕНИЕ] {FFFAFA}"
 local antiflood = 0
 local needtoreload = false
 
